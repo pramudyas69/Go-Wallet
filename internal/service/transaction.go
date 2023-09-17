@@ -6,6 +6,7 @@ import (
 	"e-wallet/dto"
 	"e-wallet/internal/util"
 	"encoding/json"
+	"fmt"
 	"time"
 )
 
@@ -13,15 +14,21 @@ type transactionService struct {
 	accountRepository     domain.AccountRepository
 	transactionRepository domain.TransactionRepository
 	cacheRepository       domain.CacheRepository
+	emailService          domain.EmailService
+	userRepository        domain.UserRepository
 }
 
 func NewTransaction(accountRepository domain.AccountRepository,
 	transactionRepository domain.TransactionRepository,
-	cacheRepository domain.CacheRepository) domain.TransactionService {
+	cacheRepository domain.CacheRepository,
+	emailService domain.EmailService,
+	userRepository domain.UserRepository) domain.TransactionService {
 	return &transactionService{
 		accountRepository:     accountRepository,
 		transactionRepository: transactionRepository,
 		cacheRepository:       cacheRepository,
+		emailService:          emailService,
+		userRepository:        userRepository,
 	}
 }
 
@@ -122,6 +129,15 @@ func (t transactionService) TransferExecute(ctx context.Context, req dto.Transfe
 	if err != nil {
 		return err
 	}
+
+	myUser, _ := t.userRepository.FindByID(ctx, myAccount.UserId)
+	dofUser, _ := t.userRepository.FindByID(ctx, dofAccount.UserId)
+
+	myUserMsg := fmt.Sprintf("Berhasil Transfer Uang Sebesar Rp.%2.f ke Sdr. %s", reqInq.Amount, dofUser.FullName)
+	dofUserMsg := fmt.Sprintf("Menerima Uang Sebesar Rp.%2.f Dari Sdr. %s", reqInq.Amount, myUser.FullName)
+
+	_ = t.emailService.Send(myUser.Email, "Berhasil Transfer!", myUserMsg)
+	_ = t.emailService.Send(dofUser.Email, "Menerima Dana!", dofUserMsg)
 
 	return nil
 }

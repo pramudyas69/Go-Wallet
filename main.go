@@ -23,7 +23,7 @@ func main() {
 
 	emailService := service.NewEmail(cnf)
 	userService := service.NewUser(userRepository, cacheConnection, emailService)
-	transactionService := service.NewTransaction(accountRepository, transactionRepository, cacheConnection)
+	transactionService := service.NewTransaction(accountRepository, transactionRepository, cacheConnection, emailService, userRepository)
 
 	authMid := middleware.Authenticate(userService)
 
