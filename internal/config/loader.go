@@ -24,5 +24,11 @@ func Get() *Config {
 			Password: os.Getenv("DB_PASS"),
 			Name:     os.Getenv("DB_NAME"),
 		},
+		Email{
+			Host:     os.Getenv("EMAIL_HOST"),
+			Port:     os.Getenv("EMAIL_PORT"),
+			User:     os.Getenv("EMAIL_USER"),
+			Password: os.Getenv("EMAIL_PASS"),
+		},
 	}
 }

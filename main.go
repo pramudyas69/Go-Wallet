@@ -12,12 +12,15 @@ import (
 
 func main() {
 	cnf := config.Get()
+
 	dbConnection := component.GetDatabaseConnectiom(cnf)
+	defer dbConnection.Close()
 	cacheConnection := component.GetCacheConnection()
 
 	userRepository := repository.NewUser(dbConnection)
 
-	userService := service.NewUser(userRepository, cacheConnection)
+	emailService := service.NewEmail(cnf)
+	userService := service.NewUser(userRepository, cacheConnection, emailService)
 
 	authMid := middleware.Authenticate(userService)
 
