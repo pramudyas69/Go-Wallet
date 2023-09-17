@@ -18,10 +18,12 @@ func NewEmail(cnf *config.Config) domain.EmailService {
 
 func (e emailService) Send(to, subject, body string) error {
 	auth := smtp.PlainAuth("", e.cnf.Email.User, e.cnf.Email.Password, e.cnf.Email.Host)
-	msg := []byte("" +
-		"From: Pandu <" + e.cnf.Email.User + ">\n" +
-		"To: " + to + "\n" +
-		"Subject: " + subject + "\n" +
-		body)
+	msg := []byte(
+		"From: Pt. Pencari Cinta Sejati <" + e.cnf.Email.User + ">\r\n" +
+			"To: " + to + "\r\n" +
+			"Subject: " + subject + "\r\n" +
+			"\r\n" +
+			body,
+	)
 	return smtp.SendMail(e.cnf.Email.Host+":"+e.cnf.Email.Port, auth, e.cnf.Email.User, []string{to}, msg)
 }
