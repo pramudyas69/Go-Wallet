@@ -15,14 +15,15 @@ func main() {
 
 	dbConnection := component.GetDatabaseConnectiom(cnf)
 	defer dbConnection.Close()
-	cacheConnection := component.GetCacheConnection()
+	//cacheConnection := component.GetCacheConnection()
+	cacheConnection := repository.NewRedisClient(cnf)
 
 	userRepository := repository.NewUser(dbConnection)
 	accountRepository := repository.NewAccount(dbConnection)
 	transactionRepository := repository.NewTransaction(dbConnection)
 
 	emailService := service.NewEmail(cnf)
-	userService := service.NewUser(userRepository, cacheConnection, emailService)
+	userService := service.NewUser(userRepository, cacheConnection, emailService, accountRepository)
 	transactionService := service.NewTransaction(accountRepository, transactionRepository, cacheConnection, emailService, userRepository)
 
 	authMid := middleware.Authenticate(userService)

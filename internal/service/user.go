@@ -12,16 +12,18 @@ import (
 )
 
 type userService struct {
-	userRepository  domain.UserRepository
-	cacheRepository domain.CacheRepository
-	emailService    domain.EmailService
+	userRepository    domain.UserRepository
+	cacheRepository   domain.CacheRepository
+	emailService      domain.EmailService
+	accountRepository domain.AccountRepository
 }
 
-func NewUser(userRepository domain.UserRepository, cacheRepository domain.CacheRepository, emailService domain.EmailService) domain.UserService {
+func NewUser(userRepository domain.UserRepository, cacheRepository domain.CacheRepository, emailService domain.EmailService, accountRepository domain.AccountRepository) domain.UserService {
 	return &userService{
-		userRepository:  userRepository,
-		cacheRepository: cacheRepository,
-		emailService:    emailService,
+		userRepository:    userRepository,
+		cacheRepository:   cacheRepository,
+		emailService:      emailService,
+		accountRepository: accountRepository,
 	}
 }
 
@@ -86,7 +88,6 @@ func (u userService) Register(ctx context.Context, req dto.UserRegisterReq) (dto
 
 	hashed, err := bcrypt.GenerateFromPassword([]byte(req.Password), 12)
 	if err != nil {
-
 		return dto.UserRegisterRes{}, err
 	}
 
@@ -103,6 +104,14 @@ func (u userService) Register(ctx context.Context, req dto.UserRegisterReq) (dto
 	if err != nil {
 		return dto.UserRegisterRes{}, err
 	}
+
+	account := domain.Account{
+		UserId:        user.ID,
+		AccountNumber: util.GenerateRandomNumber(6),
+		Balance:       0,
+	}
+
+	err = u.accountRepository.Insert(ctx, &account)
 
 	otpCode := util.GenerateRandomNumber(4)
 	referenceId := util.GetTokenGenertaor(16)

@@ -42,3 +42,13 @@ func (a accountRepository) Update(ctx context.Context, account *domain.Account) 
 	_, err := executor.ExecContext(ctx)
 	return err
 }
+
+func (a accountRepository) Insert(ctx context.Context, account *domain.Account) error {
+	executor := a.db.Insert("accounts").Rows(goqu.Record{
+		"user_id":        account.UserId,
+		"account_number": account.AccountNumber,
+		"balance":        account.Balance,
+	}).Returning("id").Executor()
+	_, err := executor.ScanStructContext(ctx, account)
+	return err
+}

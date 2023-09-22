@@ -13,18 +13,22 @@ func Get() *Config {
 	}
 
 	return &Config{
-		Server{
+		Server: Server{
 			Host: os.Getenv("SERVER_HOST"),
 			Port: os.Getenv("SERVER_PORT"),
 		},
-		Database{
+		Database: Database{
 			Host:     os.Getenv("DB_HOST"),
 			Port:     os.Getenv("DB_PORT"),
 			User:     os.Getenv("DB_USER"),
 			Password: os.Getenv("DB_PASS"),
 			Name:     os.Getenv("DB_NAME"),
 		},
-		Email{
+		Redis: Redis{
+			Addr: os.Getenv("REDIS_HOST"),
+			Pass: os.Getenv("REDIS_PASS"),
+		},
+		Email: Email{
 			Host:     os.Getenv("EMAIL_HOST"),
 			Port:     os.Getenv("EMAIL_PORT"),
 			User:     os.Getenv("EMAIL_USER"),
