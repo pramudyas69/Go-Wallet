@@ -28,27 +28,34 @@ func TestUserService_Authenticate(t *testing.T) {
 		mockUserRepo := new(mocks.MockUserRepository)
 		mockCacheRepo := new(mocks.MockCacheRepository)
 		mockUtil := new(mocks.MockUtilInterface)
-		userSvc := NewUser(mockUserRepo, mockCacheRepo, nil, nil, mockUtil)
+		mockJwt := new(mocks.MockJwtInterface)
+
+		userSvc := NewUser(mockUserRepo, mockCacheRepo, nil, nil, mockUtil, mockJwt)
 
 		mockUserRepo.On("FindByUsername", mock.Anything, authReq.Username).
 			Return(mockUser, nil)
+		mockJwt.On("GenerateToken", mock.Anything, mock.Anything, mock.Anything).
+			Return("sample-token", nil)
 		mockCacheRepo.On("Set", mock.Anything, mock.Anything).
 			Return(nil)
-		mockUtil.On("GetTokenGenerator", mock.Anything).Return("sample_token")
 
 		authRes, err := userSvc.Authenticate(context.Background(), authReq)
 		assert.NoError(t, err)
 		assert.NotNil(t, authRes.Token)
+		assert.Equal(t, "sample-token", authRes.Token)
 
 		mockUserRepo.AssertExpectations(t)
 		mockCacheRepo.AssertExpectations(t)
+		mockJwt.AssertExpectations(t)
 	})
 
 	t.Run("UserNotFound", func(t *testing.T) {
 		mockUserRepo := new(mocks.MockUserRepository)
 		mockCacheRepo := new(mocks.MockCacheRepository)
 		mockUtil := new(mocks.MockUtilInterface)
-		userSvc := NewUser(mockUserRepo, mockCacheRepo, nil, nil, mockUtil)
+		mockJwt := new(mocks.MockJwtInterface)
+
+		userSvc := NewUser(mockUserRepo, mockCacheRepo, nil, nil, mockUtil, mockJwt)
 
 		mockUserRepo.On("FindByUsername", mock.Anything, authReq.Username).
 			Return(domain.User{}, errors.New("user not found"))
@@ -63,7 +70,9 @@ func TestUserService_Authenticate(t *testing.T) {
 		mockUserRepo := new(mocks.MockUserRepository)
 		mockCacheRepo := new(mocks.MockCacheRepository)
 		mockUtil := new(mocks.MockUtilInterface)
-		userSvc := NewUser(mockUserRepo, mockCacheRepo, nil, nil, mockUtil)
+		mockJwt := new(mocks.MockJwtInterface)
+
+		userSvc := NewUser(mockUserRepo, mockCacheRepo, nil, nil, mockUtil, mockJwt)
 
 		mockUserRepo.On("FindByUsername", mock.Anything, authReq.Username).
 			Return(mockUser, nil)
@@ -94,7 +103,9 @@ func TestUserService_ValidateToken(t *testing.T) {
 	t.Run("Success", func(t *testing.T) {
 		mockCacheRepo := new(mocks.MockCacheRepository)
 		mockUtil := new(mocks.MockUtilInterface)
-		userSvc := NewUser(nil, mockCacheRepo, nil, nil, mockUtil)
+		mockJwt := new(mocks.MockJwtInterface)
+
+		userSvc := NewUser(nil, mockCacheRepo, nil, nil, mockUtil, mockJwt)
 
 		req := domain.User{
 			ID:       1,
@@ -119,7 +130,9 @@ func TestUserService_ValidateToken(t *testing.T) {
 	t.Run("CacheError", func(t *testing.T) {
 		mockCacheRepo := new(mocks.MockCacheRepository)
 		mockUtil := new(mocks.MockUtilInterface)
-		userSvc := NewUser(nil, mockCacheRepo, nil, nil, mockUtil)
+		mockJwt := new(mocks.MockJwtInterface)
+
+		userSvc := NewUser(nil, mockCacheRepo, nil, nil, mockUtil, mockJwt)
 
 		mockCacheRepo.On("Get", "user"+token).
 			Return([]byte{}, errors.New("cache error"))
@@ -135,7 +148,10 @@ func TestUserService_ValidateToken(t *testing.T) {
 	t.Run("Invalid Token", func(t *testing.T) {
 		mockCacheRepo := new(mocks.MockCacheRepository)
 		mockUtil := new(mocks.MockUtilInterface)
-		userSvc := NewUser(nil, mockCacheRepo, nil, nil, mockUtil)
+		mockJwt := new(mocks.MockJwtInterface)
+
+		userSvc := NewUser(nil, mockCacheRepo, nil, nil, mockUtil, mockJwt)
+
 		mockCacheRepo.On("Get", "user"+token).Return([]byte{}, errors.New("token invalid"))
 
 		_, err := userSvc.ValidateToken(context.Background(), token)
@@ -163,11 +179,10 @@ func TestUserService_Register(t *testing.T) {
 		mockAccountRepo := new(mocks.MockAccountRepository)
 		mockEmailService := new(mocks.MockEmailService)
 		mockCacheRepo := new(mocks.MockCacheRepository)
-		//mockUtil := new(mocks.MockUtilInterface)
-
-		// Inisialisasi service dengan mock repository dan service
 		mockUtil := new(mocks.MockUtilInterface)
-		userSvc := NewUser(mockUserRepo, mockCacheRepo, mockEmailService, mockAccountRepo, mockUtil)
+		mockJwt := new(mocks.MockJwtInterface)
+
+		userSvc := NewUser(mockUserRepo, mockCacheRepo, mockEmailService, mockAccountRepo, mockUtil, mockJwt)
 
 		// Mock behavior untuk metode FindByUsername pada UserRepository
 		mockUserRepo.On("FindByUsername", mock.Anything, registerReq.Username).
@@ -209,9 +224,9 @@ func TestUserService_Register(t *testing.T) {
 		mockEmailService := new(mocks.MockEmailService)
 		mockCacheRepo := new(mocks.MockCacheRepository)
 		mockUtil := new(mocks.MockUtilInterface)
+		mockJwt := new(mocks.MockJwtInterface)
 
-		// Inisialisasi service dengan mock repository dan service
-		userSvc := NewUser(mockUserRepo, mockCacheRepo, mockEmailService, mockAccountRepo, mockUtil)
+		userSvc := NewUser(mockUserRepo, mockCacheRepo, mockEmailService, mockAccountRepo, mockUtil, mockJwt)
 
 		// Mock behavior untuk metode FindByUsername pada UserRepository
 		mockUserRepo.On("FindByUsername", mock.Anything, registerReq.Username).
@@ -232,9 +247,9 @@ func TestUserService_Register(t *testing.T) {
 		mockEmailService := new(mocks.MockEmailService)
 		mockCacheRepo := new(mocks.MockCacheRepository)
 		mockUtil := new(mocks.MockUtilInterface)
+		mockJwt := new(mocks.MockJwtInterface)
 
-		// Inisialisasi service dengan mock repository dan service
-		userSvc := NewUser(mockUserRepo, mockCacheRepo, mockEmailService, mockAccountRepo, mockUtil)
+		userSvc := NewUser(mockUserRepo, mockCacheRepo, mockEmailService, mockAccountRepo, mockUtil, mockJwt)
 
 		// Mock behavior untuk metode FindByUsername pada UserRepository
 		mockUserRepo.On("FindByUsername", mock.Anything, registerReq.Username).
@@ -259,9 +274,9 @@ func TestUserService_Register(t *testing.T) {
 		mockEmailService := new(mocks.MockEmailService)
 		mockCacheRepo := new(mocks.MockCacheRepository)
 		mockUtil := new(mocks.MockUtilInterface)
+		mockJwt := new(mocks.MockJwtInterface)
 
-		// Inisialisasi service dengan mock repository dan service
-		userSvc := NewUser(mockUserRepo, mockCacheRepo, mockEmailService, mockAccountRepo, mockUtil)
+		userSvc := NewUser(mockUserRepo, mockCacheRepo, mockEmailService, mockAccountRepo, mockUtil, mockJwt)
 
 		// Mock behavior untuk metode FindByUsername pada UserRepository
 		mockUserRepo.On("FindByUsername", mock.Anything, registerReq.Username).
@@ -270,6 +285,8 @@ func TestUserService_Register(t *testing.T) {
 		// Mock behavior untuk metode Insert pada UserRepository
 		mockUserRepo.On("Insert", mock.Anything, mock.AnythingOfType("*domain.User")).
 			Return(nil)
+
+		mockUtil.On("GenerateRandomNumber", mock.Anything).Return("123456")
 
 		// Mock behavior untuk metode Insert pada AccountRepository
 		mockAccountRepo.On("Insert", mock.Anything, mock.AnythingOfType("*domain.Account")).
@@ -290,9 +307,9 @@ func TestUserService_Register(t *testing.T) {
 		mockEmailService := new(mocks.MockEmailService)
 		mockCacheRepo := new(mocks.MockCacheRepository)
 		mockUtil := new(mocks.MockUtilInterface)
+		mockJwt := new(mocks.MockJwtInterface)
 
-		// Inisialisasi service dengan mock repository dan service
-		userSvc := NewUser(mockUserRepo, mockCacheRepo, mockEmailService, mockAccountRepo, mockUtil)
+		userSvc := NewUser(mockUserRepo, mockCacheRepo, mockEmailService, mockAccountRepo, mockUtil, mockJwt)
 
 		// Mock behavior untuk metode FindByUsername pada UserRepository
 		mockUserRepo.On("FindByUsername", mock.Anything, registerReq.Username).
@@ -329,9 +346,10 @@ func TestUserService_Register(t *testing.T) {
 		mockEmailService := new(mocks.MockEmailService)
 		mockCacheRepo := new(mocks.MockCacheRepository)
 		mockUtil := new(mocks.MockUtilInterface)
+		mockJwt := new(mocks.MockJwtInterface)
 
-		// Inisialisasi service dengan mock repository dan service
-		userSvc := NewUser(mockUserRepo, mockCacheRepo, mockEmailService, mockAccountRepo, mockUtil)
+		userSvc := NewUser(mockUserRepo, mockCacheRepo, mockEmailService, mockAccountRepo, mockUtil, mockJwt)
+
 		// Mock behavior untuk metode FindByUsername pada UserRepository
 		mockUserRepo.On("FindByUsername", mock.Anything, registerReq.Username).
 			Return(domain.User{}, nil)
@@ -385,7 +403,7 @@ func TestUserService_ValidateOTP(t *testing.T) {
 		mockCacheRepo := new(mocks.MockCacheRepository)
 		mockUserRepo := new(mocks.MockUserRepository)
 		mockUtil := new(mocks.MockUtilInterface)
-		userSvc := NewUser(mockUserRepo, mockCacheRepo, nil, nil, mockUtil)
+		userSvc := NewUser(mockUserRepo, mockCacheRepo, nil, nil, mockUtil, nil)
 
 		// Mock behavior untuk metode Get pada CacheRepository
 		mockCacheRepo.On("Get", "otp:sample_reference_id").
@@ -409,7 +427,7 @@ func TestUserService_ValidateOTP(t *testing.T) {
 		mockCacheRepo := new(mocks.MockCacheRepository)
 		mockUserRepo := new(mocks.MockUserRepository)
 		mockUtil := new(mocks.MockUtilInterface)
-		userSvc := NewUser(mockUserRepo, mockCacheRepo, nil, nil, mockUtil)
+		userSvc := NewUser(mockUserRepo, mockCacheRepo, nil, nil, mockUtil, nil)
 
 		// Mock behavior untuk metode Get pada CacheRepository
 		mockCacheRepo.On("Get", "otp:sample_reference_id").
@@ -428,7 +446,7 @@ func TestUserService_ValidateOTP(t *testing.T) {
 		mockCacheRepo := new(mocks.MockCacheRepository)
 		mockUserRepo := new(mocks.MockUserRepository)
 		mockUtil := new(mocks.MockUtilInterface)
-		userSvc := NewUser(mockUserRepo, mockCacheRepo, nil, nil, mockUtil)
+		userSvc := NewUser(mockUserRepo, mockCacheRepo, nil, nil, mockUtil, nil)
 
 		// Mock behavior untuk metode Get pada CacheRepository
 		mockCacheRepo.On("Get", "otp:sample_reference_id").
@@ -453,7 +471,7 @@ func TestUserService_ValidateOTP(t *testing.T) {
 		mockCacheRepo := new(mocks.MockCacheRepository)
 		mockUserRepo := new(mocks.MockUserRepository)
 		mockUtil := new(mocks.MockUtilInterface)
-		userSvc := NewUser(mockUserRepo, mockCacheRepo, nil, nil, mockUtil)
+		userSvc := NewUser(mockUserRepo, mockCacheRepo, nil, nil, mockUtil, nil)
 
 		// Mock behavior untuk metode Get pada CacheRepository
 		mockCacheRepo.On("Get", "otp:sample_reference_id").

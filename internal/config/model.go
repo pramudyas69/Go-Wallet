@@ -2,6 +2,7 @@ package config
 
 type Config struct {
 	Server   Server
+	Jwt      Jwt
 	Database Database
 	Redis    Redis
 	Email    Email
@@ -10,6 +11,11 @@ type Config struct {
 type Server struct {
 	Host string
 	Port string
+}
+
+type Jwt struct {
+	AccessTokenSecret  string
+	RefreshTokenSecret string
 }
 
 type Redis struct {

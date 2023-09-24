@@ -14,7 +14,7 @@ type authAPi struct {
 func NewAuth(app *fiber.App, userService domain.UserService, authMid fiber.Handler) {
 	h := authAPi{userService: userService}
 
-	app.Post("users/login", h.LoginUser)
+	app.Post("user/login", h.LoginUser)
 	app.Get("token/validate", authMid, h.ValidateToken)
 	app.Post("user/register", h.RegisterUser)
 	app.Post("user/validate-otp", h.ValidateOTP)

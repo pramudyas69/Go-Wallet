@@ -15,15 +15,22 @@ type userService struct {
 	emailService      domain.EmailService
 	accountRepository domain.AccountRepository
 	utilInterface     domain.UtilInterface
+	jwtInterface      domain.JwtInterface
 }
 
-func NewUser(userRepository domain.UserRepository, cacheRepository domain.CacheRepository, emailService domain.EmailService, accountRepository domain.AccountRepository, utilInterface domain.UtilInterface) domain.UserService {
+func NewUser(userRepository domain.UserRepository,
+	cacheRepository domain.CacheRepository,
+	emailService domain.EmailService,
+	accountRepository domain.AccountRepository,
+	utilInterface domain.UtilInterface,
+	jwtInterface domain.JwtInterface) domain.UserService {
 	return &userService{
 		userRepository:    userRepository,
 		cacheRepository:   cacheRepository,
 		emailService:      emailService,
 		accountRepository: accountRepository,
 		utilInterface:     utilInterface,
+		jwtInterface:      jwtInterface,
 	}
 }
 
@@ -36,12 +43,17 @@ func (u userService) Authenticate(ctx context.Context, req dto.AuthReq) (dto.Aut
 	if user == (domain.User{}) {
 		return dto.AuthRes{}, domain.ErrAuthFailed
 	}
+
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password))
 	if err != nil {
 		return dto.AuthRes{}, domain.ErrAuthFailed
 	}
 
-	token := u.utilInterface.GetTokenGenerator(12)
+	token, err := u.jwtInterface.GenerateToken(user.ID, user.Email, 24)
+	if err != nil {
+		return dto.AuthRes{}, err
+	}
+
 	userJson, err := json.Marshal(user)
 	if err != nil {
 		return dto.AuthRes{}, err

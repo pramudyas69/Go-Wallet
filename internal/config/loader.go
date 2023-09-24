@@ -17,6 +17,10 @@ func Get() *Config {
 			Host: os.Getenv("SERVER_HOST"),
 			Port: os.Getenv("SERVER_PORT"),
 		},
+		Jwt: Jwt{
+			AccessTokenSecret:  os.Getenv("ACCESS_TOKEN_SECRET"),
+			RefreshTokenSecret: os.Getenv("REFRESH_TOKEN_SECRET"),
+		},
 		Database: Database{
 			Host:     os.Getenv("DB_HOST"),
 			Port:     os.Getenv("DB_PORT"),

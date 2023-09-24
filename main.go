@@ -8,6 +8,7 @@ import (
 	"e-wallet/internal/middleware"
 	"e-wallet/internal/repository"
 	"e-wallet/internal/service"
+	"e-wallet/internal/util"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -19,13 +20,14 @@ func main() {
 	//cacheConnection := component.GetCacheConnection()
 	cacheConnection := repository.NewRedisClient(cnf)
 	utilInterface := domain.NewUtil()
+	jwtInterface := util.NewJwt(cnf)
 
 	userRepository := repository.NewUser(dbConnection)
 	accountRepository := repository.NewAccount(dbConnection)
 	transactionRepository := repository.NewTransaction(dbConnection)
 
 	emailService := service.NewEmail(cnf)
-	userService := service.NewUser(userRepository, cacheConnection, emailService, accountRepository, utilInterface)
+	userService := service.NewUser(userRepository, cacheConnection, emailService, accountRepository, utilInterface, jwtInterface)
 	transactionService := service.NewTransaction(accountRepository, transactionRepository, cacheConnection, emailService, userRepository, utilInterface)
 
 	authMid := middleware.Authenticate(userService)
