@@ -4,7 +4,6 @@ import (
 	"context"
 	"e-wallet/domain"
 	"e-wallet/dto"
-	"e-wallet/internal/util"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -16,19 +15,22 @@ type transactionService struct {
 	cacheRepository       domain.CacheRepository
 	emailService          domain.EmailService
 	userRepository        domain.UserRepository
+	utilInterface         domain.UtilInterface
 }
 
 func NewTransaction(accountRepository domain.AccountRepository,
 	transactionRepository domain.TransactionRepository,
 	cacheRepository domain.CacheRepository,
 	emailService domain.EmailService,
-	userRepository domain.UserRepository) domain.TransactionService {
+	userRepository domain.UserRepository,
+	utilInterface domain.UtilInterface) domain.TransactionService {
 	return &transactionService{
 		accountRepository:     accountRepository,
 		transactionRepository: transactionRepository,
 		cacheRepository:       cacheRepository,
 		emailService:          emailService,
 		userRepository:        userRepository,
+		utilInterface:         utilInterface,
 	}
 }
 
@@ -57,7 +59,7 @@ func (t transactionService) TransferInquiry(ctx context.Context, req dto.Transfe
 		return dto.TransferInquiryRes{}, domain.ErrInsufficientBalance
 	}
 
-	inquiryKey := util.GetTokenGenertaor(32)
+	inquiryKey := t.utilInterface.GetTokenGenerator(32)
 
 	jsonData, _ := json.Marshal(req)
 	_ = t.cacheRepository.Set(inquiryKey, jsonData)
@@ -67,6 +69,7 @@ func (t transactionService) TransferInquiry(ctx context.Context, req dto.Transfe
 }
 
 func (t transactionService) TransferExecute(ctx context.Context, req dto.TransferExecuteReq) error {
+
 	val, err := t.cacheRepository.Get(req.InquiryKey)
 	if err != nil {
 		return domain.ErrInquiryNotFound

@@ -1,11 +1,23 @@
-package util
+package domain
 
 import (
 	"math/rand"
 	"time"
 )
 
-func GetTokenGenertaor(length int) string {
+type UtilInterface interface {
+	GetTokenGenerator(length int) string
+	GenerateRandomNumber(length int) string
+}
+
+type utilInterface struct {
+}
+
+func NewUtil() UtilInterface {
+	return &utilInterface{}
+}
+
+func (u utilInterface) GetTokenGenerator(length int) string {
 	rand.Seed(time.Now().UnixNano())
 	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 	result := make([]byte, length)
@@ -14,7 +26,8 @@ func GetTokenGenertaor(length int) string {
 	}
 	return string(result)
 }
-func GenerateRandomNumber(length int) string {
+
+func (u utilInterface) GenerateRandomNumber(length int) string {
 	rand.Seed(time.Now().UnixNano())
 	const charset = "0123456789"
 	result := make([]byte, length)

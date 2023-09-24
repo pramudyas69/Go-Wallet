@@ -1,6 +1,7 @@
 package main
 
 import (
+	"e-wallet/domain"
 	"e-wallet/internal/api"
 	"e-wallet/internal/component"
 	"e-wallet/internal/config"
@@ -17,14 +18,15 @@ func main() {
 	defer dbConnection.Close()
 	//cacheConnection := component.GetCacheConnection()
 	cacheConnection := repository.NewRedisClient(cnf)
+	utilInterface := domain.NewUtil()
 
 	userRepository := repository.NewUser(dbConnection)
 	accountRepository := repository.NewAccount(dbConnection)
 	transactionRepository := repository.NewTransaction(dbConnection)
 
 	emailService := service.NewEmail(cnf)
-	userService := service.NewUser(userRepository, cacheConnection, emailService, accountRepository)
-	transactionService := service.NewTransaction(accountRepository, transactionRepository, cacheConnection, emailService, userRepository)
+	userService := service.NewUser(userRepository, cacheConnection, emailService, accountRepository, utilInterface)
+	transactionService := service.NewTransaction(accountRepository, transactionRepository, cacheConnection, emailService, userRepository, utilInterface)
 
 	authMid := middleware.Authenticate(userService)
 

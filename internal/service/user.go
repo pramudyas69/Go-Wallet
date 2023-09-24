@@ -4,9 +4,7 @@ import (
 	"context"
 	"e-wallet/domain"
 	"e-wallet/dto"
-	"e-wallet/internal/util"
 	"encoding/json"
-	"fmt"
 	"golang.org/x/crypto/bcrypt"
 	"time"
 )
@@ -16,14 +14,16 @@ type userService struct {
 	cacheRepository   domain.CacheRepository
 	emailService      domain.EmailService
 	accountRepository domain.AccountRepository
+	utilInterface     domain.UtilInterface
 }
 
-func NewUser(userRepository domain.UserRepository, cacheRepository domain.CacheRepository, emailService domain.EmailService, accountRepository domain.AccountRepository) domain.UserService {
+func NewUser(userRepository domain.UserRepository, cacheRepository domain.CacheRepository, emailService domain.EmailService, accountRepository domain.AccountRepository, utilInterface domain.UtilInterface) domain.UserService {
 	return &userService{
 		userRepository:    userRepository,
 		cacheRepository:   cacheRepository,
 		emailService:      emailService,
 		accountRepository: accountRepository,
+		utilInterface:     utilInterface,
 	}
 }
 
@@ -41,7 +41,7 @@ func (u userService) Authenticate(ctx context.Context, req dto.AuthReq) (dto.Aut
 		return dto.AuthRes{}, domain.ErrAuthFailed
 	}
 
-	token := util.GetTokenGenertaor(12)
+	token := u.utilInterface.GetTokenGenerator(12)
 	userJson, err := json.Marshal(user)
 	if err != nil {
 		return dto.AuthRes{}, err
@@ -64,7 +64,9 @@ func (u userService) ValidateToken(ctx context.Context, token string) (dto.UserD
 	}
 
 	var user domain.User
-	_ = json.Unmarshal(data, &user)
+	if err := json.Unmarshal(data, &user); err != nil {
+		return dto.UserData{}, err
+	}
 
 	return dto.UserData{
 		ID:       user.ID,
@@ -75,11 +77,9 @@ func (u userService) ValidateToken(ctx context.Context, token string) (dto.UserD
 }
 
 func (u userService) Register(ctx context.Context, req dto.UserRegisterReq) (dto.UserRegisterRes, error) {
-	fmt.Println("Start")
 	exist, err := u.userRepository.FindByUsername(ctx, req.Username)
 
 	if err != nil {
-
 		return dto.UserRegisterRes{}, err
 	}
 	if exist.Username != "" {
@@ -100,30 +100,38 @@ func (u userService) Register(ctx context.Context, req dto.UserRegisterReq) (dto
 	}
 
 	err = u.userRepository.Insert(ctx, &user)
-
 	if err != nil {
 		return dto.UserRegisterRes{}, err
 	}
 
 	account := domain.Account{
 		UserId:        user.ID,
-		AccountNumber: util.GenerateRandomNumber(6),
+		AccountNumber: u.utilInterface.GenerateRandomNumber(6),
 		Balance:       0,
 	}
 
 	err = u.accountRepository.Insert(ctx, &account)
+	if err != nil {
+		return dto.UserRegisterRes{}, err
+	}
 
-	otpCode := util.GenerateRandomNumber(4)
-	referenceId := util.GetTokenGenertaor(16)
+	otpCode := u.utilInterface.GenerateRandomNumber(4)
+	referenceId := u.utilInterface.GetTokenGenerator(16)
 
 	err = u.emailService.Send(req.Email, "OTP Code", "otp anda : "+otpCode)
 	if err != nil {
 		return dto.UserRegisterRes{}, err
 	}
 
-	fmt.Println("your otp code : ", otpCode)
-	_ = u.cacheRepository.Set("otp:"+referenceId, []byte(otpCode))
-	_ = u.cacheRepository.Set("user-ref:"+referenceId, []byte(user.Username))
+	err = u.cacheRepository.Set("otp:"+referenceId, []byte(otpCode))
+	if err != nil {
+		return dto.UserRegisterRes{}, err
+	}
+
+	err = u.cacheRepository.Set("user-ref:"+referenceId, []byte(user.Username))
+	if err != nil {
+		return dto.UserRegisterRes{}, err
+	}
 
 	return dto.UserRegisterRes{
 		ReferenceID: referenceId,
@@ -150,6 +158,9 @@ func (u userService) ValidateOTP(ctx context.Context, req dto.ValidateOtpReq) er
 		return err
 	}
 	user.EmailVerifiedAt = time.Now()
-	_ = u.userRepository.Update(ctx, &user)
+	err = u.userRepository.Update(ctx, &user)
+	if err != nil {
+		return err
+	}
 	return nil
 }
