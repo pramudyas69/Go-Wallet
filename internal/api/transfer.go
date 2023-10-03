@@ -15,9 +15,9 @@ func NewTransfer(app *fiber.App,
 	authMid fiber.Handler,
 	transactionService domain.TransactionService) {
 	h := transferApi{transactionService: transactionService}
-
-	app.Post("transfer/inquiry", authMid, h.TransferInquiry)
-	app.Post("transfer/execute", authMid, h.TransferExecute)
+	v1 := app.Group("/api/v1")
+	v1.Post("transfer/inquiry", authMid, h.TransferInquiry)
+	v1.Post("transfer/execute", authMid, h.TransferExecute)
 }
 
 func (t transferApi) TransferInquiry(ctx *fiber.Ctx) error {

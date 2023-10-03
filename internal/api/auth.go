@@ -13,11 +13,11 @@ type authAPi struct {
 
 func NewAuth(app *fiber.App, userService domain.UserService, authMid fiber.Handler) {
 	h := authAPi{userService: userService}
-
-	app.Post("user/login", h.LoginUser)
-	app.Get("token/validate", authMid, h.ValidateToken)
-	app.Post("user/register", h.RegisterUser)
-	app.Post("user/validate-otp", h.ValidateOTP)
+	v1 := app.Group("/api/v1")
+	v1.Post("user/login", h.LoginUser)
+	v1.Get("token/validate-token", authMid, h.ValidateToken)
+	v1.Post("user/register", h.RegisterUser)
+	v1.Post("user/validate-otp", h.ValidateOTP)
 }
 
 func (a authAPi) LoginUser(ctx *fiber.Ctx) error {

@@ -28,8 +28,9 @@ func TestTransactionService_TransferInquiry(t *testing.T) {
 		mockEmailService := new(mocks.MockEmailService)
 		mockUserRepository := new(mocks.MockUserRepository)
 		mockUtil := new(mocks.MockUtilInterface)
+		mockNotification := new(mocks.MockNotificationRepository)
 
-		transactionService := NewTransaction(mockAccountRepository, mockTransactionRepository, mockCacheRepository, mockEmailService, mockUserRepository, mockUtil)
+		transactionService := NewTransaction(mockAccountRepository, mockTransactionRepository, mockCacheRepository, mockEmailService, mockUserRepository, mockUtil, mockNotification)
 
 		// Mock the context to include user data
 		ctx = context.WithValue(ctx, "x-users", userData)
@@ -71,9 +72,10 @@ func TestTransactionService_TransferInquiry(t *testing.T) {
 		mockEmailService := new(mocks.MockEmailService)
 		mockUserRepository := new(mocks.MockUserRepository)
 		mockUtil := new(mocks.MockUtilInterface)
+		mockNotification := new(mocks.MockNotificationRepository)
 
-		transactionService := NewTransaction(mockAccountRepository, mockTransactionRepository, mockCacheRepository, mockEmailService, mockUserRepository, mockUtil)
-		// Mock the context to include user data
+		transactionService := NewTransaction(mockAccountRepository, mockTransactionRepository, mockCacheRepository, mockEmailService, mockUserRepository, mockUtil, mockNotification) // Mock the context to include user data
+
 		ctx = context.WithValue(ctx, "x-users", userData)
 
 		// Mock the accountRepository to return an error for source account
@@ -97,9 +99,9 @@ func TestTransactionService_TransferInquiry(t *testing.T) {
 		mockEmailService := new(mocks.MockEmailService)
 		mockUserRepository := new(mocks.MockUserRepository)
 		mockUtil := new(mocks.MockUtilInterface)
+		mockNotification := new(mocks.MockNotificationRepository)
 
-		transactionService := NewTransaction(mockAccountRepository, mockTransactionRepository, mockCacheRepository, mockEmailService, mockUserRepository, mockUtil)
-		// Mock the context to include user data
+		transactionService := NewTransaction(mockAccountRepository, mockTransactionRepository, mockCacheRepository, mockEmailService, mockUserRepository, mockUtil, mockNotification) // Mock the context to include user data
 		ctx = context.WithValue(ctx, "x-users", userData)
 
 		mockAccountRepository.On("FindByUserID", ctx, userData.ID).Return(domain.Account{
@@ -128,9 +130,9 @@ func TestTransactionService_TransferInquiry(t *testing.T) {
 		mockEmailService := new(mocks.MockEmailService)
 		mockUserRepository := new(mocks.MockUserRepository)
 		mockUtil := new(mocks.MockUtilInterface)
+		mockNotification := new(mocks.MockNotificationRepository)
 
-		transactionService := NewTransaction(mockAccountRepository, mockTransactionRepository, mockCacheRepository, mockEmailService, mockUserRepository, mockUtil)
-		// Mock the context to include user data
+		transactionService := NewTransaction(mockAccountRepository, mockTransactionRepository, mockCacheRepository, mockEmailService, mockUserRepository, mockUtil, mockNotification) // Mock the context to include user data
 		ctx = context.WithValue(ctx, "x-users", userData)
 
 		// Mock the accountRepository to return a valid source account with insufficient balance
@@ -173,9 +175,9 @@ func TestTransactionService_TransferExecute(t *testing.T) {
 		mockEmailService := new(mocks.MockEmailService)
 		mockUserRepository := new(mocks.MockUserRepository)
 		mockUtil := new(mocks.MockUtilInterface)
+		mockNotification := new(mocks.MockNotificationRepository)
 
-		transactionService := NewTransaction(mockAccountRepository, mockTransactionRepository, mockCacheRepository, mockEmailService, mockUserRepository, mockUtil)
-		// Mock the context to include user data
+		transactionService := NewTransaction(mockAccountRepository, mockTransactionRepository, mockCacheRepository, mockEmailService, mockUserRepository, mockUtil, mockNotification) // Mock the context to include user data
 		//ctx = context.WithValue(ctx, "x-users", userData)
 		ctx = context.WithValue(context.TODO(), "x-users", userData)
 
@@ -212,6 +214,7 @@ func TestTransactionService_TransferExecute(t *testing.T) {
 			FullName: "John Doe",
 			Email:    "john@example.com",
 		}
+
 		dofUser := domain.User{
 			ID:       3,
 			FullName: "Jane Doe",
@@ -219,6 +222,8 @@ func TestTransactionService_TransferExecute(t *testing.T) {
 		}
 		mockUserRepository.On("FindByID", ctx, myUser.ID).Return(myUser, nil)
 		mockUserRepository.On("FindByID", ctx, dofUser.ID).Return(dofUser, nil)
+
+		mockNotification.On("Insert", context.Background(), mock.AnythingOfType("*domain.Notification")).Return(nil).Twice()
 
 		mockEmailService.On("Send", myUser.Email, mock.AnythingOfType("string"), mock.AnythingOfType("string")).Return(nil)
 		mockEmailService.On("Send", dofUser.Email, mock.AnythingOfType("string"), mock.AnythingOfType("string")).Return(nil)
@@ -256,8 +261,9 @@ func TestTransactionService_TransferExecute(t *testing.T) {
 		mockEmailService := new(mocks.MockEmailService)
 		mockUserRepository := new(mocks.MockUserRepository)
 		mockUtil := new(mocks.MockUtilInterface)
+		mockNotification := new(mocks.MockNotificationRepository)
 
-		transactionService := NewTransaction(mockAccountRepository, mockTransactionRepository, mockCacheRepository, mockEmailService, mockUserRepository, mockUtil)
+		transactionService := NewTransaction(mockAccountRepository, mockTransactionRepository, mockCacheRepository, mockEmailService, mockUserRepository, mockUtil, mockNotification)
 		mockCacheRepository.On("Get", mock.AnythingOfType("string")).Return([]byte{}, domain.ErrInquiryNotFound)
 		mockTransactionRepository.On("Insert", ctx, mock.AnythingOfType("*domain.Transaction")).Return(domain.ErrInquiryNotFound).Twice() // Twice for debit and credit
 		mockAccountRepository.On("Update", ctx, mock.AnythingOfType("*domain.Account")).Return(domain.ErrInquiryNotFound).Twice()         // Twice for source and destination accounts
@@ -278,9 +284,9 @@ func TestTransactionService_TransferExecute(t *testing.T) {
 		mockEmailService := new(mocks.MockEmailService)
 		mockUserRepository := new(mocks.MockUserRepository)
 		mockUtil := new(mocks.MockUtilInterface)
+		mockNotification := new(mocks.MockNotificationRepository)
 
-		transactionService := NewTransaction(mockAccountRepository, mockTransactionRepository, mockCacheRepository, mockEmailService, mockUserRepository, mockUtil)
-		// Mock the context to include user data
+		transactionService := NewTransaction(mockAccountRepository, mockTransactionRepository, mockCacheRepository, mockEmailService, mockUserRepository, mockUtil, mockNotification) // Mock the context to include user data
 		ctx = context.WithValue(ctx, "x-users", userData)
 
 		inquiryData := dto.TransferInquiryReq{
@@ -309,9 +315,9 @@ func TestTransactionService_TransferExecute(t *testing.T) {
 		mockEmailService := new(mocks.MockEmailService)
 		mockUserRepository := new(mocks.MockUserRepository)
 		mockUtil := new(mocks.MockUtilInterface)
+		mockNotification := new(mocks.MockNotificationRepository)
 
-		transactionService := NewTransaction(mockAccountRepository, mockTransactionRepository, mockCacheRepository, mockEmailService, mockUserRepository, mockUtil)
-		// Mock the context to include user data
+		transactionService := NewTransaction(mockAccountRepository, mockTransactionRepository, mockCacheRepository, mockEmailService, mockUserRepository, mockUtil, mockNotification) // Mock the context to include user data
 		ctx = context.WithValue(ctx, "x-users", userData)
 
 		inquiryData := dto.TransferInquiryReq{
@@ -348,9 +354,9 @@ func TestTransactionService_TransferExecute(t *testing.T) {
 		mockEmailService := new(mocks.MockEmailService)
 		mockUserRepository := new(mocks.MockUserRepository)
 		mockUtil := new(mocks.MockUtilInterface)
+		mockNotification := new(mocks.MockNotificationRepository)
 
-		transactionService := NewTransaction(mockAccountRepository, mockTransactionRepository, mockCacheRepository, mockEmailService, mockUserRepository, mockUtil)
-		// Mock the context to include user data
+		transactionService := NewTransaction(mockAccountRepository, mockTransactionRepository, mockCacheRepository, mockEmailService, mockUserRepository, mockUtil, mockNotification) // Mock the context to include user data
 		ctx = context.WithValue(ctx, "x-users", userData)
 
 		inquiryData := dto.TransferInquiryReq{
@@ -395,9 +401,9 @@ func TestTransactionService_TransferExecute(t *testing.T) {
 		mockEmailService := new(mocks.MockEmailService)
 		mockUserRepository := new(mocks.MockUserRepository)
 		mockUtil := new(mocks.MockUtilInterface)
+		mockNotification := new(mocks.MockNotificationRepository)
 
-		transactionService := NewTransaction(mockAccountRepository, mockTransactionRepository, mockCacheRepository, mockEmailService, mockUserRepository, mockUtil)
-		// Mock the context to include user data
+		transactionService := NewTransaction(mockAccountRepository, mockTransactionRepository, mockCacheRepository, mockEmailService, mockUserRepository, mockUtil, mockNotification) // Mock the context to include user data
 		ctx = context.WithValue(ctx, "x-users", userData)
 
 		inquiryData := dto.TransferInquiryReq{
@@ -447,9 +453,9 @@ func TestTransactionService_TransferExecute(t *testing.T) {
 		mockEmailService := new(mocks.MockEmailService)
 		mockUserRepository := new(mocks.MockUserRepository)
 		mockUtil := new(mocks.MockUtilInterface)
+		mockNotification := new(mocks.MockNotificationRepository)
 
-		transactionService := NewTransaction(mockAccountRepository, mockTransactionRepository, mockCacheRepository, mockEmailService, mockUserRepository, mockUtil)
-		// Mock the context to include user data
+		transactionService := NewTransaction(mockAccountRepository, mockTransactionRepository, mockCacheRepository, mockEmailService, mockUserRepository, mockUtil, mockNotification) // Mock the context to include user data
 		ctx = context.WithValue(ctx, "x-users", userData)
 
 		inquiryData := dto.TransferInquiryReq{
@@ -500,9 +506,9 @@ func TestTransactionService_TransferExecute(t *testing.T) {
 		mockEmailService := new(mocks.MockEmailService)
 		mockUserRepository := new(mocks.MockUserRepository)
 		mockUtil := new(mocks.MockUtilInterface)
+		mockNotification := new(mocks.MockNotificationRepository)
 
-		transactionService := NewTransaction(mockAccountRepository, mockTransactionRepository, mockCacheRepository, mockEmailService, mockUserRepository, mockUtil)
-		// Mock the context to include user data
+		transactionService := NewTransaction(mockAccountRepository, mockTransactionRepository, mockCacheRepository, mockEmailService, mockUserRepository, mockUtil, mockNotification) // Mock the context to include user data
 		ctx = context.WithValue(ctx, "x-users", userData)
 
 		inquiryData := dto.TransferInquiryReq{

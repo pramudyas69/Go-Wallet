@@ -6,16 +6,18 @@ import (
 	"e-wallet/dto"
 	"encoding/json"
 	"fmt"
+	"github.com/gofiber/fiber/v2/log"
 	"time"
 )
 
 type transactionService struct {
-	accountRepository     domain.AccountRepository
-	transactionRepository domain.TransactionRepository
-	cacheRepository       domain.CacheRepository
-	emailService          domain.EmailService
-	userRepository        domain.UserRepository
-	utilInterface         domain.UtilInterface
+	accountRepository      domain.AccountRepository
+	transactionRepository  domain.TransactionRepository
+	cacheRepository        domain.CacheRepository
+	emailService           domain.EmailService
+	userRepository         domain.UserRepository
+	utilInterface          domain.UtilInterface
+	notificationRepository domain.NotificationRepository
 }
 
 func NewTransaction(accountRepository domain.AccountRepository,
@@ -23,14 +25,16 @@ func NewTransaction(accountRepository domain.AccountRepository,
 	cacheRepository domain.CacheRepository,
 	emailService domain.EmailService,
 	userRepository domain.UserRepository,
-	utilInterface domain.UtilInterface) domain.TransactionService {
+	utilInterface domain.UtilInterface,
+	notificationRepository domain.NotificationRepository) domain.TransactionService {
 	return &transactionService{
-		accountRepository:     accountRepository,
-		transactionRepository: transactionRepository,
-		cacheRepository:       cacheRepository,
-		emailService:          emailService,
-		userRepository:        userRepository,
-		utilInterface:         utilInterface,
+		accountRepository:      accountRepository,
+		transactionRepository:  transactionRepository,
+		cacheRepository:        cacheRepository,
+		emailService:           emailService,
+		userRepository:         userRepository,
+		utilInterface:          utilInterface,
+		notificationRepository: notificationRepository,
 	}
 }
 
@@ -139,8 +143,42 @@ func (t transactionService) TransferExecute(ctx context.Context, req dto.Transfe
 	myUserMsg := fmt.Sprintf("Berhasil Transfer Uang Sebesar Rp.%2.f ke Sdr. %s", reqInq.Amount, dofUser.FullName)
 	dofUserMsg := fmt.Sprintf("Menerima Uang Sebesar Rp.%2.f Dari Sdr. %s", reqInq.Amount, myUser.FullName)
 
+	go t.notificationAfterTransfer(myAccount, dofAccount, reqInq.Amount)
+
 	_ = t.emailService.Send(myUser.Email, "Berhasil Transfer!", myUserMsg)
 	_ = t.emailService.Send(dofUser.Email, "Menerima Dana!", dofUserMsg)
-
 	return nil
+}
+
+func (t transactionService) notificationAfterTransfer(sofAccount domain.Account, dofAccount domain.Account, amount float64) {
+	myUserMsg := fmt.Sprintf("Berhasil Transfer Uang Sebesar Rp.%2.f", amount)
+	dofUserMsg := fmt.Sprintf("Menerima Uang Sebesar Rp.%2.f", amount)
+
+	myNotif := &domain.Notification{
+		UserID:    sofAccount.UserId,
+		Title:     "Berhasil Transfer!",
+		Body:      myUserMsg,
+		Status:    1,
+		IsRead:    0,
+		CreatedAt: time.Now(),
+	}
+
+	dofNotif := &domain.Notification{
+		UserID:    dofAccount.UserId,
+		Title:     "Menerima Dana!",
+		Body:      dofUserMsg,
+		Status:    1,
+		IsRead:    0,
+		CreatedAt: time.Now(),
+	}
+
+	err := t.notificationRepository.Insert(context.Background(), myNotif)
+	if err != nil {
+		log.Fatalf("error: %v", err.Error())
+	}
+
+	err = t.notificationRepository.Insert(context.Background(), dofNotif)
+	if err != nil {
+		log.Fatalf("error: %v", err.Error())
+	}
 }

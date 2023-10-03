@@ -3,6 +3,3 @@ run:
 
 unit-tests:
 	go test ./...
-
-build:
-	docker build . -t shadowshotx/product-go-micro
