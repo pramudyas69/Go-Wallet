@@ -5,6 +5,7 @@ import (
 	"e-wallet/domain"
 	"e-wallet/dto"
 	"encoding/json"
+	"fmt"
 	"golang.org/x/crypto/bcrypt"
 	"time"
 )
@@ -72,6 +73,7 @@ func (u userService) Authenticate(ctx context.Context, req dto.AuthReq) (dto.Aut
 func (u userService) ValidateToken(ctx context.Context, token string) (dto.UserData, error) {
 	data, err := u.cacheRepository.Get("user" + token)
 	if err != nil {
+		fmt.Println(err.Error())
 		return dto.UserData{}, domain.ErrAuthFailed
 	}
 

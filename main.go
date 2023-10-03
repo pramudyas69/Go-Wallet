@@ -2,12 +2,14 @@ package main
 
 import (
 	"e-wallet/domain"
+	"e-wallet/dto"
 	"e-wallet/internal/api"
 	"e-wallet/internal/component"
 	"e-wallet/internal/config"
 	"e-wallet/internal/middleware"
 	"e-wallet/internal/repository"
 	"e-wallet/internal/service"
+	"e-wallet/internal/sse"
 	"e-wallet/internal/util"
 	"github.com/gofiber/fiber/v2"
 )
@@ -21,6 +23,9 @@ func main() {
 	cacheConnection := repository.NewRedisClient(cnf)
 	utilInterface := domain.NewUtil()
 	jwtInterface := util.NewJwt(cnf)
+	hub := &dto.Hub{
+		NotificationChannel: make(map[int64]chan dto.NotificationData),
+	}
 
 	userRepository := repository.NewUser(dbConnection)
 	accountRepository := repository.NewAccount(dbConnection)
@@ -29,7 +34,7 @@ func main() {
 
 	emailService := service.NewEmail(cnf)
 	userService := service.NewUser(userRepository, cacheConnection, emailService, accountRepository, utilInterface, jwtInterface)
-	transactionService := service.NewTransaction(accountRepository, transactionRepository, cacheConnection, emailService, userRepository, utilInterface, notificationRepository)
+	transactionService := service.NewTransaction(accountRepository, transactionRepository, cacheConnection, emailService, userRepository, utilInterface, notificationRepository, hub)
 	notificationService := service.NewNotification(notificationRepository)
 
 	authMid := middleware.Authenticate(userService)
@@ -38,6 +43,7 @@ func main() {
 	api.NewAuth(app, userService, authMid)
 	api.NewTransfer(app, authMid, transactionService)
 	api.NewNotification(app, authMid, notificationService)
+	sse.NewNotification(app, authMid, hub)
 
 	_ = app.Listen(cnf.Server.Host + ":" + cnf.Server.Port)
 }

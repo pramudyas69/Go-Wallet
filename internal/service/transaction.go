@@ -18,6 +18,7 @@ type transactionService struct {
 	userRepository         domain.UserRepository
 	utilInterface          domain.UtilInterface
 	notificationRepository domain.NotificationRepository
+	hub                    *dto.Hub
 }
 
 func NewTransaction(accountRepository domain.AccountRepository,
@@ -26,7 +27,8 @@ func NewTransaction(accountRepository domain.AccountRepository,
 	emailService domain.EmailService,
 	userRepository domain.UserRepository,
 	utilInterface domain.UtilInterface,
-	notificationRepository domain.NotificationRepository) domain.TransactionService {
+	notificationRepository domain.NotificationRepository,
+	hub *dto.Hub) domain.TransactionService {
 	return &transactionService{
 		accountRepository:      accountRepository,
 		transactionRepository:  transactionRepository,
@@ -35,6 +37,7 @@ func NewTransaction(accountRepository domain.AccountRepository,
 		userRepository:         userRepository,
 		utilInterface:          utilInterface,
 		notificationRepository: notificationRepository,
+		hub:                    hub,
 	}
 }
 
@@ -177,8 +180,30 @@ func (t transactionService) notificationAfterTransfer(sofAccount domain.Account,
 		log.Fatalf("error: %v", err.Error())
 	}
 
+	if channel, ok := t.hub.NotificationChannel[sofAccount.UserId]; ok {
+		channel <- dto.NotificationData{
+			ID:        myNotif.ID,
+			Title:     myNotif.Title,
+			Body:      myNotif.Body,
+			Status:    myNotif.Status,
+			IsRead:    myNotif.IsRead,
+			CreatedAt: myNotif.CreatedAt,
+		}
+	}
+
 	err = t.notificationRepository.Insert(context.Background(), dofNotif)
 	if err != nil {
 		log.Fatalf("error: %v", err.Error())
+	}
+
+	if channel, ok := t.hub.NotificationChannel[dofAccount.UserId]; ok {
+		channel <- dto.NotificationData{
+			ID:        dofNotif.ID,
+			Title:     dofNotif.Title,
+			Body:      dofNotif.Body,
+			Status:    dofNotif.Status,
+			IsRead:    dofNotif.IsRead,
+			CreatedAt: dofNotif.CreatedAt,
+		}
 	}
 }
