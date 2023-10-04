@@ -33,3 +33,7 @@ func (r redisRepository) Get(key string) ([]byte, error) {
 func (r redisRepository) Set(key string, entry []byte) error {
 	return r.rdb.Set(context.Background(), key, entry, 15*time.Minute).Err()
 }
+
+func (r redisRepository) Delete(key string) error {
+	return r.rdb.Del(context.Background(), key).Err()
+}

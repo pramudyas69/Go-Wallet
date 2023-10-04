@@ -11,14 +11,13 @@ import (
 )
 
 type transactionService struct {
-	accountRepository      domain.AccountRepository
-	transactionRepository  domain.TransactionRepository
-	cacheRepository        domain.CacheRepository
-	emailService           domain.EmailService
-	userRepository         domain.UserRepository
-	utilInterface          domain.UtilInterface
-	notificationRepository domain.NotificationRepository
-	hub                    *dto.Hub
+	accountRepository     domain.AccountRepository
+	transactionRepository domain.TransactionRepository
+	cacheRepository       domain.CacheRepository
+	emailService          domain.EmailService
+	userRepository        domain.UserRepository
+	utilInterface         domain.UtilInterface
+	notificationService   domain.NotificationService
 }
 
 func NewTransaction(accountRepository domain.AccountRepository,
@@ -27,17 +26,15 @@ func NewTransaction(accountRepository domain.AccountRepository,
 	emailService domain.EmailService,
 	userRepository domain.UserRepository,
 	utilInterface domain.UtilInterface,
-	notificationRepository domain.NotificationRepository,
-	hub *dto.Hub) domain.TransactionService {
+	notificationService domain.NotificationService) domain.TransactionService {
 	return &transactionService{
-		accountRepository:      accountRepository,
-		transactionRepository:  transactionRepository,
-		cacheRepository:        cacheRepository,
-		emailService:           emailService,
-		userRepository:         userRepository,
-		utilInterface:          utilInterface,
-		notificationRepository: notificationRepository,
-		hub:                    hub,
+		accountRepository:     accountRepository,
+		transactionRepository: transactionRepository,
+		cacheRepository:       cacheRepository,
+		emailService:          emailService,
+		userRepository:        userRepository,
+		utilInterface:         utilInterface,
+		notificationService:   notificationService,
 	}
 }
 
@@ -66,6 +63,10 @@ func (t transactionService) TransferInquiry(ctx context.Context, req dto.Transfe
 		return dto.TransferInquiryRes{}, domain.ErrInsufficientBalance
 	}
 
+	if myAccount.Balance <= 0 {
+		return dto.TransferInquiryRes{}, domain.ErrInsufficientBalance
+	}
+
 	inquiryKey := t.utilInterface.GetTokenGenerator(32)
 
 	jsonData, _ := json.Marshal(req)
@@ -76,7 +77,6 @@ func (t transactionService) TransferInquiry(ctx context.Context, req dto.Transfe
 }
 
 func (t transactionService) TransferExecute(ctx context.Context, req dto.TransferExecuteReq) error {
-
 	val, err := t.cacheRepository.Get(req.InquiryKey)
 	if err != nil {
 		return domain.ErrInquiryNotFound
@@ -143,67 +143,45 @@ func (t transactionService) TransferExecute(ctx context.Context, req dto.Transfe
 	myUser, _ := t.userRepository.FindByID(ctx, myAccount.UserId)
 	dofUser, _ := t.userRepository.FindByID(ctx, dofAccount.UserId)
 
-	myUserMsg := fmt.Sprintf("Berhasil Transfer Uang Sebesar Rp.%2.f ke Sdr. %s", reqInq.Amount, dofUser.FullName)
-	dofUserMsg := fmt.Sprintf("Menerima Uang Sebesar Rp.%2.f Dari Sdr. %s", reqInq.Amount, myUser.FullName)
+	err = t.cacheRepository.Delete(req.InquiryKey)
+	if err != nil {
+		return err
+	}
 
 	go t.notificationAfterTransfer(myAccount, dofAccount, reqInq.Amount)
+	go t.sendEmailAfterTransfer(myAccount, dofAccount, myUser, dofUser, reqInq.Amount)
 
-	_ = t.emailService.Send(myUser.Email, "Berhasil Transfer!", myUserMsg)
-	_ = t.emailService.Send(dofUser.Email, "Menerima Dana!", dofUserMsg)
 	return nil
 }
 
 func (t transactionService) notificationAfterTransfer(sofAccount domain.Account, dofAccount domain.Account, amount float64) {
-	myUserMsg := fmt.Sprintf("Berhasil Transfer Uang Sebesar Rp.%2.f", amount)
-	dofUserMsg := fmt.Sprintf("Menerima Uang Sebesar Rp.%2.f", amount)
+	err := t.notificationService.Insert(context.Background(), sofAccount.UserId, "TRANSFER", map[string]string{
+		"amount": fmt.Sprintf("%2.f", amount),
+	})
 
-	myNotif := &domain.Notification{
-		UserID:    sofAccount.UserId,
-		Title:     "Berhasil Transfer!",
-		Body:      myUserMsg,
-		Status:    1,
-		IsRead:    0,
-		CreatedAt: time.Now(),
-	}
-
-	dofNotif := &domain.Notification{
-		UserID:    dofAccount.UserId,
-		Title:     "Menerima Dana!",
-		Body:      dofUserMsg,
-		Status:    1,
-		IsRead:    0,
-		CreatedAt: time.Now(),
-	}
-
-	err := t.notificationRepository.Insert(context.Background(), myNotif)
 	if err != nil {
-		log.Fatalf("error: %v", err.Error())
+		log.Fatalf("error when send notification: %v", err.Error())
 	}
 
-	if channel, ok := t.hub.NotificationChannel[sofAccount.UserId]; ok {
-		channel <- dto.NotificationData{
-			ID:        myNotif.ID,
-			Title:     myNotif.Title,
-			Body:      myNotif.Body,
-			Status:    myNotif.Status,
-			IsRead:    myNotif.IsRead,
-			CreatedAt: myNotif.CreatedAt,
-		}
-	}
+	err = t.notificationService.Insert(context.Background(), dofAccount.UserId, "TRANSFER_DEST", map[string]string{
+		"amount": fmt.Sprintf("%2.f", amount),
+	})
 
-	err = t.notificationRepository.Insert(context.Background(), dofNotif)
 	if err != nil {
-		log.Fatalf("error: %v", err.Error())
+		log.Fatalf("error when send notification: %v", err.Error())
 	}
+}
 
-	if channel, ok := t.hub.NotificationChannel[dofAccount.UserId]; ok {
-		channel <- dto.NotificationData{
-			ID:        dofNotif.ID,
-			Title:     dofNotif.Title,
-			Body:      dofNotif.Body,
-			Status:    dofNotif.Status,
-			IsRead:    dofNotif.IsRead,
-			CreatedAt: dofNotif.CreatedAt,
-		}
+func (t transactionService) sendEmailAfterTransfer(sofAccount domain.Account, dofAccount domain.Account, myUser domain.User, dofUser domain.User, amount float64) {
+	myUserMsg := fmt.Sprintf("Berhasil Transfer Uang Sebesar Rp.%2.f ke Sdr. %s", amount, myUser.FullName)
+	dofUserMsg := fmt.Sprintf("Menerima Uang Sebesar Rp.%2.f Dari Sdr. %s", amount, dofUser.FullName)
+
+	err := t.emailService.Send(myUser.Email, "Berhasil Transfer!", myUserMsg)
+	if err != nil {
+		return
+	}
+	err = t.emailService.Send(dofUser.Email, "Menerima Dana!", dofUserMsg)
+	if err != nil {
+		return
 	}
 }

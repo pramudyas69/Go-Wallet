@@ -20,3 +20,8 @@ func (m *MockCacheRepository) Set(key string, entry []byte) error {
 	args := m.Called(key, entry)
 	return args.Error(0)
 }
+
+func (m *MockCacheRepository) Delete(key string) error {
+	args := m.Called(key)
+	return args.Error(0)
+}

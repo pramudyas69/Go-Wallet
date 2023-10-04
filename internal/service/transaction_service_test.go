@@ -7,6 +7,7 @@ import (
 	mocks "e-wallet/internal/repository/mock"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"testing"
@@ -21,51 +22,6 @@ func TestTransactionService_TransferInquiry(t *testing.T) {
 		Username: "johndoe",
 	}
 
-	t.Run("Valid transfer inquiry", func(t *testing.T) {
-		mockAccountRepository := new(mocks.MockAccountRepository)
-		mockCacheRepository := new(mocks.MockCacheRepository)
-		mockTransactionRepository := new(mocks.MockTransactionRepository)
-		mockEmailService := new(mocks.MockEmailService)
-		mockUserRepository := new(mocks.MockUserRepository)
-		mockUtil := new(mocks.MockUtilInterface)
-		mockNotification := new(mocks.MockNotificationRepository)
-		mockHub := &dto.Hub{}
-
-		transactionService := NewTransaction(mockAccountRepository, mockTransactionRepository, mockCacheRepository, mockEmailService, mockUserRepository, mockUtil, mockNotification, mockHub)
-
-		// Mock the context to include user data
-		ctx = context.WithValue(ctx, "x-users", userData)
-
-		mockAccountRepository.On("FindByUserID", ctx, userData.ID).Return(domain.Account{
-			AccountNumber: "123456789",
-			Balance:       100.0,
-		}, nil)
-
-		// Mock the accountRepository to return a valid destination account
-		destinationAccount := domain.Account{
-			AccountNumber: "987654321",
-			Balance:       50.0,
-		}
-		mockAccountRepository.On("FindByAccountNumber", ctx, mock.AnythingOfType("string")).Return(destinationAccount, nil)
-		mockUtil.On("GetTokenGenerator", 32).Return("inquiry123")
-		// Mock the cacheRepository to return no error during Set
-		mockCacheRepository.On("Set", mock.AnythingOfType("string"), mock.AnythingOfType("[]uint8")).Return(nil)
-
-		req := dto.TransferInquiryReq{
-			AccountNumber: "987654321",
-			Amount:        25.0,
-		}
-
-		res, err := transactionService.TransferInquiry(ctx, req)
-
-		assert.NoError(t, err)
-		assert.NotEmpty(t, res.InquiryKey)
-		assert.Equal(t, "inquiry123", res.InquiryKey)
-
-		// Ensure that the cacheRepository Set method was called with the correct arguments
-		mockCacheRepository.AssertCalled(t, "Set", mock.AnythingOfType("string"), mock.AnythingOfType("[]uint8"))
-	})
-
 	t.Run("Invalid source account", func(t *testing.T) {
 		mockAccountRepository := new(mocks.MockAccountRepository)
 		mockCacheRepository := new(mocks.MockCacheRepository)
@@ -73,10 +29,9 @@ func TestTransactionService_TransferInquiry(t *testing.T) {
 		mockEmailService := new(mocks.MockEmailService)
 		mockUserRepository := new(mocks.MockUserRepository)
 		mockUtil := new(mocks.MockUtilInterface)
-		mockNotification := new(mocks.MockNotificationRepository)
-		mockHub := &dto.Hub{}
+		mockNotification := new(mocks.MockNotificationService)
 
-		transactionService := NewTransaction(mockAccountRepository, mockTransactionRepository, mockCacheRepository, mockEmailService, mockUserRepository, mockUtil, mockNotification, mockHub)
+		transactionService := NewTransaction(mockAccountRepository, mockTransactionRepository, mockCacheRepository, mockEmailService, mockUserRepository, mockUtil, mockNotification)
 
 		ctx = context.WithValue(ctx, "x-users", userData)
 
@@ -101,10 +56,9 @@ func TestTransactionService_TransferInquiry(t *testing.T) {
 		mockEmailService := new(mocks.MockEmailService)
 		mockUserRepository := new(mocks.MockUserRepository)
 		mockUtil := new(mocks.MockUtilInterface)
-		mockNotification := new(mocks.MockNotificationRepository)
-		mockHub := &dto.Hub{}
+		mockNotification := new(mocks.MockNotificationService)
 
-		transactionService := NewTransaction(mockAccountRepository, mockTransactionRepository, mockCacheRepository, mockEmailService, mockUserRepository, mockUtil, mockNotification, mockHub)
+		transactionService := NewTransaction(mockAccountRepository, mockTransactionRepository, mockCacheRepository, mockEmailService, mockUserRepository, mockUtil, mockNotification)
 		ctx = context.WithValue(ctx, "x-users", userData)
 
 		mockAccountRepository.On("FindByUserID", ctx, userData.ID).Return(domain.Account{
@@ -133,10 +87,9 @@ func TestTransactionService_TransferInquiry(t *testing.T) {
 		mockEmailService := new(mocks.MockEmailService)
 		mockUserRepository := new(mocks.MockUserRepository)
 		mockUtil := new(mocks.MockUtilInterface)
-		mockNotification := new(mocks.MockNotificationRepository)
-		mockHub := &dto.Hub{}
+		mockNotification := new(mocks.MockNotificationService)
 
-		transactionService := NewTransaction(mockAccountRepository, mockTransactionRepository, mockCacheRepository, mockEmailService, mockUserRepository, mockUtil, mockNotification, mockHub)
+		transactionService := NewTransaction(mockAccountRepository, mockTransactionRepository, mockCacheRepository, mockEmailService, mockUserRepository, mockUtil, mockNotification)
 		ctx = context.WithValue(ctx, "x-users", userData)
 
 		// Mock the accountRepository to return a valid source account with insufficient balance
@@ -172,93 +125,6 @@ func TestTransactionService_TransferExecute(t *testing.T) {
 		Username: "johndoe",
 	}
 
-	t.Run("Valid transfer execution", func(t *testing.T) {
-		mockAccountRepository := new(mocks.MockAccountRepository)
-		mockCacheRepository := new(mocks.MockCacheRepository)
-		mockTransactionRepository := new(mocks.MockTransactionRepository)
-		mockEmailService := new(mocks.MockEmailService)
-		mockUserRepository := new(mocks.MockUserRepository)
-		mockUtil := new(mocks.MockUtilInterface)
-		mockNotification := new(mocks.MockNotificationRepository)
-		mockHub := &dto.Hub{}
-
-		transactionService := NewTransaction(mockAccountRepository, mockTransactionRepository, mockCacheRepository, mockEmailService, mockUserRepository, mockUtil, mockNotification, mockHub)
-		//ctx = context.WithValue(ctx, "x-users", userData)
-		ctx = context.WithValue(context.TODO(), "x-users", userData)
-
-		inquiryData := dto.TransferInquiryReq{
-			AccountNumber: "987654321",
-			Amount:        25.0,
-		}
-		jsonData, _ := json.Marshal(inquiryData)
-		mockCacheRepository.On("Get", mock.AnythingOfType("string")).Return(jsonData, nil)
-
-		mockAccountRepository.On("FindByUserID", ctx, userData.ID).Return(domain.Account{
-			ID:            1,
-			UserId:        userData.ID,
-			AccountNumber: "123456789",
-			Balance:       100.0,
-		}, nil)
-
-		// Mock the accountRepository to return a valid destination account
-		destinationAccount := domain.Account{
-			ID:            2,
-			UserId:        3, // Different user ID for destination account
-			AccountNumber: "987654321",
-			Balance:       50.0,
-		}
-		mockAccountRepository.On("FindByAccountNumber", ctx, inquiryData.AccountNumber).Return(destinationAccount, nil)
-
-		mockTransactionRepository.On("Insert", ctx, mock.AnythingOfType("*domain.Transaction")).Return(nil).Twice() // Twice for debit and credit
-
-		// Mock the accountRepository Update method
-		mockAccountRepository.On("Update", ctx, mock.AnythingOfType("*domain.Account")).Return(nil).Twice() // Twice for source and destination accounts
-
-		myUser := domain.User{
-			ID:       1,
-			FullName: "John Doe",
-			Email:    "john@example.com",
-		}
-
-		dofUser := domain.User{
-			ID:       3,
-			FullName: "Jane Doe",
-			Email:    "jane@example.com",
-		}
-		mockUserRepository.On("FindByID", ctx, myUser.ID).Return(myUser, nil)
-		mockUserRepository.On("FindByID", ctx, dofUser.ID).Return(dofUser, nil)
-
-		mockNotification.On("Insert", context.Background(), mock.AnythingOfType("*domain.Notification")).Return(nil).Twice()
-
-		mockEmailService.On("Send", myUser.Email, mock.AnythingOfType("string"), mock.AnythingOfType("string")).Return(nil)
-		mockEmailService.On("Send", dofUser.Email, mock.AnythingOfType("string"), mock.AnythingOfType("string")).Return(nil)
-
-		req := dto.TransferExecuteReq{
-			InquiryKey: "inquiry123",
-		}
-
-		err := transactionService.TransferExecute(ctx, req)
-
-		assert.NoError(t, err)
-
-		// Ensure that the cacheRepository Get method was called with the correct argument
-		mockCacheRepository.AssertCalled(t, "Get", req.InquiryKey)
-
-		// Ensure that the transactionRepository Insert method was called twice
-		mockTransactionRepository.AssertNumberOfCalls(t, "Insert", 2)
-
-		// Ensure that the accountRepository Update method was called twice
-		mockAccountRepository.AssertNumberOfCalls(t, "Update", 2)
-
-		// Ensure that the userRepository FindByID method was called for both source and destination users
-		//mockUserRepository.AssertCalled(t, "FindByID", myUser.ID)
-		//mockUserRepository.AssertCalled(t, "FindByID", dofUser.ID)
-
-		// Ensure that the emailService Send method was called for both source and destination users
-		mockEmailService.AssertCalled(t, "Send", myUser.Email, mock.AnythingOfType("string"), mock.AnythingOfType("string"))
-		mockEmailService.AssertCalled(t, "Send", dofUser.Email, mock.AnythingOfType("string"), mock.AnythingOfType("string"))
-	})
-
 	t.Run("Invalid inquiry data", func(t *testing.T) {
 		mockAccountRepository := new(mocks.MockAccountRepository)
 		mockCacheRepository := new(mocks.MockCacheRepository)
@@ -266,11 +132,9 @@ func TestTransactionService_TransferExecute(t *testing.T) {
 		mockEmailService := new(mocks.MockEmailService)
 		mockUserRepository := new(mocks.MockUserRepository)
 		mockUtil := new(mocks.MockUtilInterface)
-		mockNotification := new(mocks.MockNotificationRepository)
-		mockHub := &dto.Hub{}
+		mockNotification := new(mocks.MockNotificationService)
 
-		transactionService := NewTransaction(mockAccountRepository, mockTransactionRepository, mockCacheRepository, mockEmailService, mockUserRepository, mockUtil, mockNotification, mockHub)
-
+		transactionService := NewTransaction(mockAccountRepository, mockTransactionRepository, mockCacheRepository, mockEmailService, mockUserRepository, mockUtil, mockNotification)
 		mockCacheRepository.On("Get", mock.AnythingOfType("string")).Return([]byte{}, domain.ErrInquiryNotFound)
 		mockTransactionRepository.On("Insert", ctx, mock.AnythingOfType("*domain.Transaction")).Return(domain.ErrInquiryNotFound).Twice() // Twice for debit and credit
 		mockAccountRepository.On("Update", ctx, mock.AnythingOfType("*domain.Account")).Return(domain.ErrInquiryNotFound).Twice()         // Twice for source and destination accounts
@@ -291,16 +155,16 @@ func TestTransactionService_TransferExecute(t *testing.T) {
 		mockEmailService := new(mocks.MockEmailService)
 		mockUserRepository := new(mocks.MockUserRepository)
 		mockUtil := new(mocks.MockUtilInterface)
-		mockNotification := new(mocks.MockNotificationRepository)
-		mockHub := &dto.Hub{}
+		mockNotification := new(mocks.MockNotificationService)
 
-		transactionService := NewTransaction(mockAccountRepository, mockTransactionRepository, mockCacheRepository, mockEmailService, mockUserRepository, mockUtil, mockNotification, mockHub)
+		transactionService := NewTransaction(mockAccountRepository, mockTransactionRepository, mockCacheRepository, mockEmailService, mockUserRepository, mockUtil, mockNotification)
 		ctx = context.WithValue(ctx, "x-users", userData)
 
 		inquiryData := dto.TransferInquiryReq{
 			AccountNumber: "987654321",
 			Amount:        25.0,
 		}
+
 		jsonData, _ := json.Marshal(inquiryData)
 		mockCacheRepository.On("Get", mock.AnythingOfType("string")).Return(jsonData, nil)
 
@@ -323,10 +187,9 @@ func TestTransactionService_TransferExecute(t *testing.T) {
 		mockEmailService := new(mocks.MockEmailService)
 		mockUserRepository := new(mocks.MockUserRepository)
 		mockUtil := new(mocks.MockUtilInterface)
-		mockNotification := new(mocks.MockNotificationRepository)
-		mockHub := &dto.Hub{}
+		mockNotification := new(mocks.MockNotificationService)
 
-		transactionService := NewTransaction(mockAccountRepository, mockTransactionRepository, mockCacheRepository, mockEmailService, mockUserRepository, mockUtil, mockNotification, mockHub)
+		transactionService := NewTransaction(mockAccountRepository, mockTransactionRepository, mockCacheRepository, mockEmailService, mockUserRepository, mockUtil, mockNotification)
 		ctx = context.WithValue(ctx, "x-users", userData)
 
 		inquiryData := dto.TransferInquiryReq{
@@ -363,10 +226,9 @@ func TestTransactionService_TransferExecute(t *testing.T) {
 		mockEmailService := new(mocks.MockEmailService)
 		mockUserRepository := new(mocks.MockUserRepository)
 		mockUtil := new(mocks.MockUtilInterface)
-		mockNotification := new(mocks.MockNotificationRepository)
-		mockHub := &dto.Hub{}
+		mockNotification := new(mocks.MockNotificationService)
 
-		transactionService := NewTransaction(mockAccountRepository, mockTransactionRepository, mockCacheRepository, mockEmailService, mockUserRepository, mockUtil, mockNotification, mockHub)
+		transactionService := NewTransaction(mockAccountRepository, mockTransactionRepository, mockCacheRepository, mockEmailService, mockUserRepository, mockUtil, mockNotification)
 		ctx = context.WithValue(ctx, "x-users", userData)
 
 		inquiryData := dto.TransferInquiryReq{
@@ -411,10 +273,9 @@ func TestTransactionService_TransferExecute(t *testing.T) {
 		mockEmailService := new(mocks.MockEmailService)
 		mockUserRepository := new(mocks.MockUserRepository)
 		mockUtil := new(mocks.MockUtilInterface)
-		mockNotification := new(mocks.MockNotificationRepository)
-		mockHub := &dto.Hub{}
+		mockNotification := new(mocks.MockNotificationService)
 
-		transactionService := NewTransaction(mockAccountRepository, mockTransactionRepository, mockCacheRepository, mockEmailService, mockUserRepository, mockUtil, mockNotification, mockHub)
+		transactionService := NewTransaction(mockAccountRepository, mockTransactionRepository, mockCacheRepository, mockEmailService, mockUserRepository, mockUtil, mockNotification)
 		ctx = context.WithValue(ctx, "x-users", userData)
 
 		inquiryData := dto.TransferInquiryReq{
@@ -464,10 +325,9 @@ func TestTransactionService_TransferExecute(t *testing.T) {
 		mockEmailService := new(mocks.MockEmailService)
 		mockUserRepository := new(mocks.MockUserRepository)
 		mockUtil := new(mocks.MockUtilInterface)
-		mockNotification := new(mocks.MockNotificationRepository)
-		mockHub := &dto.Hub{}
+		mockNotification := new(mocks.MockNotificationService)
 
-		transactionService := NewTransaction(mockAccountRepository, mockTransactionRepository, mockCacheRepository, mockEmailService, mockUserRepository, mockUtil, mockNotification, mockHub)
+		transactionService := NewTransaction(mockAccountRepository, mockTransactionRepository, mockCacheRepository, mockEmailService, mockUserRepository, mockUtil, mockNotification)
 		ctx = context.WithValue(ctx, "x-users", userData)
 
 		inquiryData := dto.TransferInquiryReq{
@@ -518,10 +378,9 @@ func TestTransactionService_TransferExecute(t *testing.T) {
 		mockEmailService := new(mocks.MockEmailService)
 		mockUserRepository := new(mocks.MockUserRepository)
 		mockUtil := new(mocks.MockUtilInterface)
-		mockNotification := new(mocks.MockNotificationRepository)
-		mockHub := &dto.Hub{}
+		mockNotification := new(mocks.MockNotificationService)
 
-		transactionService := NewTransaction(mockAccountRepository, mockTransactionRepository, mockCacheRepository, mockEmailService, mockUserRepository, mockUtil, mockNotification, mockHub)
+		transactionService := NewTransaction(mockAccountRepository, mockTransactionRepository, mockCacheRepository, mockEmailService, mockUserRepository, mockUtil, mockNotification)
 		ctx = context.WithValue(ctx, "x-users", userData)
 
 		inquiryData := dto.TransferInquiryReq{
@@ -566,5 +425,94 @@ func TestTransactionService_TransferExecute(t *testing.T) {
 
 		assert.Error(t, err)
 		assert.Equal(t, "destination account update error", err.Error())
+	})
+
+	t.Run("Valid transfer execution", func(t *testing.T) {
+		mockAccountRepository := new(mocks.MockAccountRepository)
+		mockCacheRepository := new(mocks.MockCacheRepository)
+		mockTransactionRepository := new(mocks.MockTransactionRepository)
+		mockEmailService := new(mocks.MockEmailService)
+		mockUserRepository := new(mocks.MockUserRepository)
+		mockUtil := new(mocks.MockUtilInterface)
+		mockNotification := new(mocks.MockNotificationService)
+
+		transactionService := NewTransaction(mockAccountRepository, mockTransactionRepository, mockCacheRepository, mockEmailService, mockUserRepository, mockUtil, mockNotification)
+
+		ctx = context.WithValue(context.TODO(), "x-users", userData)
+
+		inquiryData := dto.TransferInquiryReq{
+			AccountNumber: "987654321",
+			Amount:        25.0,
+		}
+		jsonData, _ := json.Marshal(inquiryData)
+		mockCacheRepository.On("Get", mock.AnythingOfType("string")).Return(jsonData, nil)
+
+		myAccount := domain.Account{
+			ID:            1,
+			UserId:        userData.ID,
+			AccountNumber: "123456789",
+			Balance:       100.0,
+		}
+
+		mockAccountRepository.On("FindByUserID", ctx, userData.ID).Return(myAccount, nil)
+
+		// Mock the accountRepository to return a valid destination account
+		destinationAccount := domain.Account{
+			ID:            2,
+			UserId:        3, // Different user ID for destination account
+			AccountNumber: "987654321",
+			Balance:       50.0,
+		}
+		mockAccountRepository.On("FindByAccountNumber", ctx, inquiryData.AccountNumber).Return(destinationAccount, nil)
+
+		mockTransactionRepository.On("Insert", ctx, mock.AnythingOfType("*domain.Transaction")).Return(nil).Twice() // Twice for debit and credit
+
+		// Mock the accountRepository Update method
+		mockAccountRepository.On("Update", ctx, mock.AnythingOfType("*domain.Account")).Return(nil).Twice() // Twice for source and destination accounts
+
+		myUser := domain.User{
+			ID:       1,
+			FullName: "John Doe",
+			Email:    "john@example.com",
+		}
+
+		dofUser := domain.User{
+			ID:       3,
+			FullName: "Jane Doe",
+			Email:    "jane@example.com",
+		}
+		mockUserRepository.On("FindByID", ctx, myUser.ID).Return(myUser, nil)
+		mockUserRepository.On("FindByID", ctx, dofUser.ID).Return(dofUser, nil)
+
+		mockCacheRepository.On("Delete", mock.AnythingOfType("string")).Return(nil)
+
+		mockNotification.On("Insert", context.Background(), myAccount.UserId, "TRANSFER", map[string]string{
+			"amount": fmt.Sprintf("%2.f", inquiryData.Amount),
+		}).Return(nil)
+
+		mockNotification.On("Insert", context.Background(), destinationAccount.UserId, "TRANSFER_DEST", map[string]string{
+			"amount": fmt.Sprintf("%2.f", inquiryData.Amount),
+		}).Return(nil)
+
+		mockEmailService.On("Send", myUser.Email, mock.AnythingOfType("string"), mock.AnythingOfType("string")).Return(nil)
+		mockEmailService.On("Send", dofUser.Email, mock.AnythingOfType("string"), mock.AnythingOfType("string")).Return(nil)
+
+		req := dto.TransferExecuteReq{
+			InquiryKey: "inquiry123",
+		}
+
+		err := transactionService.TransferExecute(ctx, req)
+
+		assert.NoError(t, err)
+
+		// Ensure that the cacheRepository Get method was called with the correct argument
+		mockCacheRepository.AssertCalled(t, "Get", req.InquiryKey)
+
+		// Ensure that the transactionRepository Insert method was called twice
+		mockTransactionRepository.AssertNumberOfCalls(t, "Insert", 2)
+
+		// Ensure that the accountRepository Update method was called twice
+		mockAccountRepository.AssertNumberOfCalls(t, "Update", 2)
+
 	})
 }

@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"e-wallet/domain"
+	"e-wallet/dto"
 	mocks "e-wallet/internal/repository/mock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -11,7 +12,10 @@ import (
 
 func TestFindByUser(t *testing.T) {
 	mockRepo := new(mocks.MockNotificationRepository)
-	service := NewNotification(mockRepo)
+	mockTemplate := new(mocks.MockTemplateRepository)
+	mockHub := &dto.Hub{}
+
+	service := NewNotification(mockRepo, mockTemplate, mockHub)
 
 	userID := int64(1)
 	notifications := []domain.Notification{
@@ -26,4 +30,33 @@ func TestFindByUser(t *testing.T) {
 	assert.Equal(t, notifications[0].ID, result[0].ID)
 	assert.Equal(t, notifications[1].Title, result[1].Title)
 	mockRepo.AssertCalled(t, "FindByUser", mock.Anything, userID)
+}
+
+func TestInsert(t *testing.T) {
+	mockRepo := new(mocks.MockNotificationRepository)
+	mockTemplate := new(mocks.MockTemplateRepository)
+	mockHub := &dto.Hub{}
+
+	service := NewNotification(mockRepo, mockTemplate, mockHub)
+
+	userID := int64(1)
+	code := "test"
+	data := map[string]string{
+		"test": "test",
+	}
+
+	tmpl := domain.Template{
+		Code:  code,
+		Title: "Title",
+		Body:  "Body",
+	}
+
+	mockTemplate.On("FindByCode", mock.Anything, code).Return(tmpl, nil)
+	mockRepo.On("Insert", mock.Anything, mock.Anything).Return(nil)
+
+	err := service.Insert(context.Background(), userID, code, data)
+	assert.NoError(t, err)
+
+	mockTemplate.AssertCalled(t, "FindByCode", mock.Anything, code)
+	mockRepo.AssertCalled(t, "Insert", mock.Anything, mock.Anything)
 }
