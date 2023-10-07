@@ -38,5 +38,9 @@ func Get() *Config {
 			User:     os.Getenv("EMAIL_USER"),
 			Password: os.Getenv("EMAIL_PASS"),
 		},
+		Midtrans: Midtrans{
+			Key:    os.Getenv("MIDTRANS_KEY"),
+			IsProd: os.Getenv("MIDTRANS_ENV") == "production",
+		},
 	}
 }

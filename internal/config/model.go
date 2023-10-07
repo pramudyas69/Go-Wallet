@@ -6,6 +6,7 @@ type Config struct {
 	Database Database
 	Redis    Redis
 	Email    Email
+	Midtrans Midtrans
 }
 
 type Server struct {
@@ -36,4 +37,9 @@ type Email struct {
 	Port     string
 	User     string
 	Password string
+}
+
+type Midtrans struct {
+	Key    string
+	IsProd bool
 }
