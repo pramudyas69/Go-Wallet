@@ -19,6 +19,8 @@ func GetHttpStatus(err error) int {
 		return 404
 	case errors.Is(err, domain.ErrAccountNotFound):
 		return 404
+	case errors.Is(err, domain.ErrPinInvalid):
+		return 400
 	default:
 		return 500
 	}

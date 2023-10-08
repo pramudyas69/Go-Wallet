@@ -8,16 +8,21 @@ import (
 )
 
 type authAPi struct {
-	userService domain.UserService
+	userService   domain.UserService
+	factorService domain.FactorService
 }
 
-func NewAuth(app *fiber.App, userService domain.UserService, authMid fiber.Handler) {
-	h := authAPi{userService: userService}
+func NewAuth(app *fiber.App, userService domain.UserService, factorService domain.FactorService, authMid fiber.Handler) {
+	h := authAPi{
+		userService:   userService,
+		factorService: factorService,
+	}
 	v1 := app.Group("/api/v1")
 	v1.Post("user/login", h.LoginUser)
 	v1.Get("token/validate-token", authMid, h.ValidateToken)
 	v1.Post("user/register", h.RegisterUser)
 	v1.Post("user/validate-otp", h.ValidateOTP)
+	v1.Post("user/create-pin", authMid, h.CreatePIN)
 }
 
 func (a authAPi) LoginUser(ctx *fiber.Ctx) error {
@@ -78,6 +83,25 @@ func (a authAPi) ValidateOTP(ctx *fiber.Ctx) error {
 	}
 
 	err := a.userService.ValidateOTP(ctx.Context(), req)
+	if err != nil {
+		code := util.GetHttpStatus(err)
+		return ctx.Status(code).JSON(dto.ErrorResponse{
+			Message: err.Error(),
+		})
+	}
+	return ctx.SendStatus(200)
+}
+
+func (a authAPi) CreatePIN(ctx *fiber.Ctx) error {
+	var req dto.CreatePinReq
+	if err := ctx.BodyParser(&req); err != nil {
+		return ctx.SendStatus(400)
+	}
+
+	user := ctx.Locals("x-users").(dto.UserData)
+	req.UserID = user.ID
+
+	err := a.factorService.Insert(ctx.Context(), req)
 	if err != nil {
 		code := util.GetHttpStatus(err)
 		return ctx.Status(code).JSON(dto.ErrorResponse{
