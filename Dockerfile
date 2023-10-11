@@ -1,13 +1,16 @@
+# Stage 1: Build the Go application
+FROM golang:1.16 AS builder
 
-FROM golang:1.21.3-alpine3.17 AS builder
+WORKDIR /app
+COPY . .
+RUN go build -o myapp
 
-ARG VERSION=dev
+FROM alpine:3.14
 
-WORKDIR /go/src/app
-COPY main.go .
-RUN go build -o main -ldflags=-X=main.version=${VERSION} main.go
+COPY --from=builder /app/myapp /usr/local/bin/myapp
+WORKDIR /app
+EXPOSE 8080
+CMD ["myapp"]
 
-FROM debian:buster-slim
-COPY --from=builder /go/src/app/main /go/bin/main
-ENV PATH="/go/bin:${PATH}"
-CMD ["main"]
+
+
