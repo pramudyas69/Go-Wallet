@@ -25,6 +25,15 @@ func NewAuth(app *fiber.App, userService domain.UserService, factorService domai
 	v1.Post("user/create-pin", authMid, h.CreatePIN)
 }
 
+// @Summary Login User
+// @Description Login a user
+// @Tags Authentication
+// @Accept json
+// @Produce json
+// @Param request body dto.AuthReq true "Authentication Request"
+// @Success 200 {object} dto.SuccessResponse
+// @Failure 400 {object} dto.ErrorResponse
+// @Router /user/login [post]
 func (a authAPi) LoginUser(ctx *fiber.Ctx) error {
 	var req dto.AuthReq
 	if err := ctx.BodyParser(&req); err != nil {
@@ -46,6 +55,15 @@ func (a authAPi) LoginUser(ctx *fiber.Ctx) error {
 	})
 }
 
+// @Summary Validate Token
+// @Description Validate user token
+// @Tags Authentication
+// @Security ApiKeyAuth
+// @Accept json
+// @Produce json
+// @Success 200 {object} dto.SuccessResponse
+// @Failure 401 {object} dto.ErrorResponse
+// @Router /token/validate-token [get]
 func (a authAPi) ValidateToken(ctx *fiber.Ctx) error {
 	user := ctx.Locals("x-users")
 	return ctx.Status(200).JSON(dto.SuccessResponse{
@@ -55,6 +73,15 @@ func (a authAPi) ValidateToken(ctx *fiber.Ctx) error {
 	})
 }
 
+// @Summary Register User
+// @Description Register a new user
+// @Tags Users
+// @Accept json
+// @Produce json
+// @Param request body dto.UserRegisterReq true "User Registration Request"
+// @Success 200 {object} dto.SuccessResponse
+// @Failure 400 {object} dto.ErrorResponse
+// @Router /user/register [post]
 func (a authAPi) RegisterUser(ctx *fiber.Ctx) error {
 	var req dto.UserRegisterReq
 	if err := ctx.BodyParser(&req); err != nil {
@@ -76,6 +103,15 @@ func (a authAPi) RegisterUser(ctx *fiber.Ctx) error {
 	})
 }
 
+// @Summary Validate OTP
+// @Description Validate OTP for user
+// @Tags Users
+// @Accept json
+// @Produce json
+// @Param request body dto.ValidateOtpReq true "OTP Validation Request"
+// @Success 200
+// @Failure 400 {object} dto.ErrorResponse
+// @Router /user/validate-otp [post]
 func (a authAPi) ValidateOTP(ctx *fiber.Ctx) error {
 	var req dto.ValidateOtpReq
 	if err := ctx.BodyParser(&req); err != nil {
@@ -92,6 +128,16 @@ func (a authAPi) ValidateOTP(ctx *fiber.Ctx) error {
 	return ctx.SendStatus(200)
 }
 
+// @Summary Create PIN
+// @Description Create a PIN for the user
+// @Tags Users
+// @Accept json
+// @Produce json
+// @Param request body dto.CreatePinReq true "Create PIN Request"
+// @Security ApiKeyAuth
+// @Success 200
+// @Failure 400 {object} dto.ErrorResponse
+// @Router /user/create-pin [post]
 func (a authAPi) CreatePIN(ctx *fiber.Ctx) error {
 	var req dto.CreatePinReq
 	if err := ctx.BodyParser(&req); err != nil {

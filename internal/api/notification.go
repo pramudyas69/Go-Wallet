@@ -18,6 +18,15 @@ func NewNotification(app *fiber.App, authMid fiber.Handler, notificationService 
 	v1.Get("notification", authMid, h.FindByUser)
 }
 
+// @Summary Get Notifications for User
+// @Description Get notifications for the authenticated user.
+// @Tags Notification
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Success 200 {object} dto.SuccessResponse
+// @Failure 400,401,500 {object} dto.ErrorResponse
+// @Router /notification [get]
 func (a notificationApi) FindByUser(ctx *fiber.Ctx) error {
 	user := ctx.Locals("x-users")
 

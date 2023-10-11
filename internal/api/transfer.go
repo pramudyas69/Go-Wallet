@@ -25,6 +25,16 @@ func NewTransfer(app *fiber.App,
 	v1.Post("transfer/execute", authMid, h.TransferExecute)
 }
 
+// @Summary Transfer Inquiry
+// @Description Initiate a transfer inquiry.
+// @Tags Transfer
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Param transferInquiryReq body dto.TransferInquiryReq true "Transfer inquiry request payload"
+// @Success 200 {object} dto.SuccessResponse
+// @Failure 400,401,500 {object} dto.ErrorResponse
+// @Router /transfer/inquiry [post]
 func (t transferApi) TransferInquiry(ctx *fiber.Ctx) error {
 	var req dto.TransferInquiryReq
 	if err := ctx.BodyParser(&req); err != nil {
@@ -44,6 +54,16 @@ func (t transferApi) TransferInquiry(ctx *fiber.Ctx) error {
 	})
 }
 
+// @Summary Execute Transfer
+// @Description Execute a transfer based on the inquiry.
+// @Tags Transfer
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Param transferExecuteReq body dto.TransferExecuteReq true "Transfer execute request payload"
+// @Success 200 {object} dto.SuccessResponse
+// @Failure 400,401,500 {object} dto.ErrorResponse
+// @Router /transfer/execute [post]
 func (t transferApi) TransferExecute(ctx *fiber.Ctx) error {
 	var req dto.TransferExecuteReq
 	if err := ctx.BodyParser(&req); err != nil {

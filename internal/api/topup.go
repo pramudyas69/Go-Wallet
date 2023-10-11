@@ -17,6 +17,16 @@ func NewTopUp(app *fiber.App, authMid fiber.Handler, topupService domain.TopUpSe
 	v1.Post("/topup/initialize", authMid, h.InitializeTopUp)
 }
 
+// @Summary Initialize Top-Up
+// @Description Initialize a top-up request for the authenticated user.
+// @Tags Top-Up
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Param topUpReq body dto.TopUpReq true "Top-up request payload"
+// @Success 200 {object} dto.SuccessResponse
+// @Failure 400,401,500 {object} dto.ErrorResponse
+// @Router /topup/initialize [post]
 func (t topupApi) InitializeTopUp(ctx *fiber.Ctx) error {
 	var req dto.TopUpReq
 	if err := ctx.BodyParser(&req); err != nil {

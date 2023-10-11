@@ -1,0 +1,362 @@
+basePath: /api/v1
+definitions:
+  dto.AuthReq:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    type: object
+  dto.CreatePinReq:
+    properties:
+      pin:
+        type: string
+    type: object
+  dto.ErrorResponse:
+    properties:
+      message: {}
+    type: object
+  dto.SuccessResponse:
+    properties:
+      code:
+        type: integer
+      data: {}
+      status:
+        type: string
+    type: object
+  dto.TopUpReq:
+    properties:
+      amount:
+        type: number
+    type: object
+  dto.TransferExecuteReq:
+    properties:
+      inquiry_key:
+        type: string
+      pin:
+        type: string
+    type: object
+  dto.TransferInquiryReq:
+    properties:
+      account_number:
+        type: string
+      amount:
+        type: number
+    type: object
+  dto.UserRegisterReq:
+    properties:
+      email:
+        type: string
+      full_name:
+        type: string
+      password:
+        type: string
+      phone:
+        type: string
+      username:
+        type: string
+    type: object
+  dto.ValidateOtpReq:
+    properties:
+      otp:
+        type: string
+      reference_id:
+        type: string
+    type: object
+host: localhost:9090
+info:
+  contact:
+    email: fiber@swagger.io
+    name: API Support
+  description: This is a sample swagger for Fiber
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: E-Wallet Open API
+  version: "2.0"
+paths:
+  /notification:
+    get:
+      consumes:
+      - application/json
+      description: Get notifications for the authenticated user.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Get Notifications for User
+      tags:
+      - Notification
+  /sse/notification-stream:
+    get:
+      consumes:
+      - text/event-stream
+      description: Stream notifications to the authenticated user via Server-Sent
+        Events (SSE).
+      produces:
+      - text/event-stream
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: Stream Notification
+      tags:
+      - SSE
+  /token/validate-token:
+    get:
+      consumes:
+      - application/json
+      description: Validate user token
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.SuccessResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Validate Token
+      tags:
+      - Authentication
+  /topup/initialize:
+    post:
+      consumes:
+      - application/json
+      description: Initialize a top-up request for the authenticated user.
+      parameters:
+      - description: Top-up request payload
+        in: body
+        name: topUpReq
+        required: true
+        schema:
+          $ref: '#/definitions/dto.TopUpReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Initialize Top-Up
+      tags:
+      - Top-Up
+  /transfer/execute:
+    post:
+      consumes:
+      - application/json
+      description: Execute a transfer based on the inquiry.
+      parameters:
+      - description: Transfer execute request payload
+        in: body
+        name: transferExecuteReq
+        required: true
+        schema:
+          $ref: '#/definitions/dto.TransferExecuteReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Execute Transfer
+      tags:
+      - Transfer
+  /transfer/inquiry:
+    post:
+      consumes:
+      - application/json
+      description: Initiate a transfer inquiry.
+      parameters:
+      - description: Transfer inquiry request payload
+        in: body
+        name: transferInquiryReq
+        required: true
+        schema:
+          $ref: '#/definitions/dto.TransferInquiryReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Transfer Inquiry
+      tags:
+      - Transfer
+  /user/create-pin:
+    post:
+      consumes:
+      - application/json
+      description: Create a PIN for the user
+      parameters:
+      - description: Create PIN Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreatePinReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Create PIN
+      tags:
+      - Users
+  /user/login:
+    post:
+      consumes:
+      - application/json
+      description: Login a user
+      parameters:
+      - description: Authentication Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.AuthReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Login User
+      tags:
+      - Authentication
+  /user/register:
+    post:
+      consumes:
+      - application/json
+      description: Register a new user
+      parameters:
+      - description: User Registration Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UserRegisterReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Register User
+      tags:
+      - Users
+  /user/validate-otp:
+    post:
+      consumes:
+      - application/json
+      description: Validate OTP for user
+      parameters:
+      - description: OTP Validation Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.ValidateOtpReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Validate OTP
+      tags:
+      - Users
+securityDefinitions:
+  ApiKeyAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

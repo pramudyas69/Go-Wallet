@@ -20,6 +20,14 @@ func NewNotification(app *fiber.App, authMid fiber.Handler, hub *dto.Hub) {
 	v1.Get("sse/notification-stream", authMid, h.StreamNotification)
 }
 
+// @Summary Stream Notification
+// @Description Stream notifications to the authenticated user via Server-Sent Events (SSE).
+// @Tags SSE
+// @Accept text/event-stream
+// @Produce text/event-stream
+// @Security ApiKeyAuth
+// @Success 200 {string} string
+// @Router /sse/notification-stream [get]
 func (s notificationSse) StreamNotification(ctx *fiber.Ctx) error {
 	ctx.Set("Content-Type", "text/event-stream")
 

@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Swagger UI</title>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.2.2/swagger-ui.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.2.2/swagger-ui-bundle.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.2.2/swagger-ui-standalone-preset.js"></script>
+</head>
+<body>
+<div id="swagger-ui"></div>
+<script>
+    const ui = SwaggerUIBundle({
+        url: "./swagger.json",
+        dom_id: '#swagger-ui',
+        deepLinking: true,
+        presets: [SwaggerUIBundle.presets.apis],
+        plugins: [SwaggerUIStandalonePreset],
+        // Tambahkan opsi header Authorization
+        requestInterceptor: (request) => {
+            request.headers['Authorization'] = 'Bearer YOUR_ACCESS_TOKEN';
+            return request;
+        },
+    });
+</script>
+</body>
+</html>
