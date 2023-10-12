@@ -1,17 +1,10 @@
 package config
 
 import (
-	"github.com/gofiber/fiber/v2/log"
-	"github.com/joho/godotenv"
 	"os"
 )
 
 func Get() *Config {
-	err := godotenv.Load(".env")
-	if err != nil {
-		log.Fatalf("error when load env %s", err.Error())
-	}
-
 	return &Config{
 		Server: Server{
 			Host: os.Getenv("SERVER_HOST"),
